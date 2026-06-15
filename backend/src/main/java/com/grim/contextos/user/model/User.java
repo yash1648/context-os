@@ -3,6 +3,8 @@ package com.grim.contextos.user.model;
 import com.grim.contextos.auth.model.Role;
 import com.grim.contextos.common.audit.BaseEntity;
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.time.LocalDateTime;
 
 @Entity
@@ -25,8 +27,9 @@ public class User extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private Role role = Role.USER;
 
-    @Column(columnDefinition = "jsonb default '{}'")
-    private String settings = "{}";
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private String settings;
 
     @Column
     private LocalDateTime lastLoginAt;

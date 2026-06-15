@@ -3,6 +3,7 @@ package com.grim.contextos.common.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -41,6 +42,22 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String,Object>> handleForbidden(ForbiddenException ex){
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(errorBody(ex.getCode(),ex.getMessage()));
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<Map<String,Object>> handleBadCredentials(BadCredentialsException ex){
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(errorBody("INVALID_CREDENTIALS", ex.getMessage()));
+    }
+
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<Map<String,Object>> handleRuntime(RuntimeException ex){
+        if (ex.getMessage() != null && ex.getMessage().contains("Email already")) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(errorBody("EMAIL_EXISTS", ex.getMessage()));
+        }
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(errorBody("BAD_REQUEST", ex.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
