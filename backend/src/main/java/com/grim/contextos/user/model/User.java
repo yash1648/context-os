@@ -28,7 +28,7 @@ public class User extends BaseEntity {
     private Role role = Role.USER;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(columnDefinition = "jsonb")
+    @Column
     private String settings;
 
     @Column

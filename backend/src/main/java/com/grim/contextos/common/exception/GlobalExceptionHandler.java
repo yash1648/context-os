@@ -52,12 +52,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Map<String,Object>> handleRuntime(RuntimeException ex){
-        if (ex.getMessage() != null && ex.getMessage().contains("Email already")) {
+        String msg = ex.getMessage();
+        if (msg != null && msg.contains("Email already")) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(errorBody("EMAIL_EXISTS", ex.getMessage()));
+                    .body(errorBody("EMAIL_EXISTS", msg));
         }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(errorBody("BAD_REQUEST", ex.getMessage()));
+                .body(errorBody("BAD_REQUEST", msg != null ? msg : "No message"));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
