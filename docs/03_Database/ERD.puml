@@ -1,0 +1,211 @@
+@startuml ContextOS_ERD
+!define ENTITY entity
+
+skinparam backgroundColor #f8f9fa
+skinparam linetype ortho
+
+' ============================================
+' ENTITIES
+' ============================================
+
+ENTITY "users" as users {
+  + id: UUID <<PK>>
+  --
+  email: VARCHAR(255) <<UNIQUE>>
+  password_hash: VARCHAR(255)
+  display_name: VARCHAR(100)
+  avatar_url: VARCHAR(500)
+  email_verified: BOOLEAN
+  mfa_enabled: BOOLEAN
+  mfa_secret: VARCHAR(255)
+  role: VARCHAR(20)
+  settings: JSONB
+  created_at: TIMESTAMPTZ
+  updated_at: TIMESTAMPTZ
+  last_login_at: TIMESTAMPTZ
+}
+
+ENTITY "refresh_tokens" as refresh_tokens {
+  + id: UUID <<PK>>
+  --
+  # user_id: UUID <<FK>>
+  token: VARCHAR(500) <<UNIQUE>>
+  expires_at: TIMESTAMPTZ
+  revoked: BOOLEAN
+  created_at: TIMESTAMPTZ
+}
+
+ENTITY "containers" as containers {
+  + id: UUID <<PK>>
+  --
+  # owner_id: UUID <<FK>>
+  type: VARCHAR(50)
+  title: VARCHAR(500)
+  description: TEXT
+  status: VARCHAR(20)
+  progress_percentage: INTEGER
+  progress_data: JSONB
+  metadata: JSONB
+  # ai_context_id: UUID <<FK>>
+  embedding: VECTOR(1536)
+  created_at: TIMESTAMPTZ
+  updated_at: TIMESTAMPTZ
+  deleted_at: TIMESTAMPTZ
+}
+
+ENTITY "tags" as tags {
+  + id: UUID <<PK>>
+  --
+  # owner_id: UUID <<FK>>
+  name: VARCHAR(100)
+  color: VARCHAR(7)
+  description: VARCHAR(500)
+  created_at: TIMESTAMPTZ
+  UNIQUE(owner_id, name)
+}
+
+ENTITY "container_tags" as container_tags {
+  --
+  # container_id: UUID <<FK>>
+  # tag_id: UUID <<FK>>
+  assigned_at: TIMESTAMPTZ
+}
+
+ENTITY "timeline_events" as timeline_events {
+  + id: UUID <<PK>>
+  --
+  # container_id: UUID <<FK>>
+  event_type: VARCHAR(50)
+  description: TEXT
+  old_value: TEXT
+  new_value: TEXT
+  metadata: JSONB
+  created_at: TIMESTAMPTZ
+}
+
+ENTITY "snapshots" as snapshots {
+  + id: UUID <<PK>>
+  --
+  # container_id: UUID <<FK>>
+  label: VARCHAR(200)
+  snapshot_data: JSONB
+  metadata: JSONB
+  version: INTEGER
+  created_at: TIMESTAMPTZ
+  UNIQUE(container_id, version)
+}
+
+ENTITY "pins" as pins {
+  + id: UUID <<PK>>
+  --
+  # owner_id: UUID <<FK>>
+  # container_id: UUID <<FK>>
+  pinned_at: TIMESTAMPTZ
+  UNIQUE(owner_id, container_id)
+}
+
+ENTITY "ai_contexts" as ai_contexts {
+  + id: UUID <<PK>>
+  --
+  # container_id: UUID <<FK>> <<UNIQUE>>
+  summary: TEXT
+  summary_model: VARCHAR(100)
+  summary_generated_at: TIMESTAMPTZ
+  auto_tags: TEXT[]
+  auto_tag_scores: FLOAT[]
+  entities: JSONB
+  relationships: JSONB
+  enrichment_version: INTEGER
+  enrichment_status: VARCHAR(20)
+  last_enriched_at: TIMESTAMPTZ
+  created_at: TIMESTAMPTZ
+  updated_at: TIMESTAMPTZ
+}
+
+ENTITY "knowledge_nodes" as knowledge_nodes {
+  + id: UUID <<PK>>
+  --
+  # owner_id: UUID <<FK>>
+  label: VARCHAR(255)
+  type: VARCHAR(50)
+  # source_container_id: UUID <<FK>>
+  metadata: JSONB
+  embedding: VECTOR(1536)
+  created_at: TIMESTAMPTZ
+}
+
+ENTITY "knowledge_edges" as knowledge_edges {
+  + id: UUID <<PK>>
+  --
+  # source_node_id: UUID <<FK>>
+  # target_node_id: UUID <<FK>>
+  relationship_type: VARCHAR(100)
+  weight: FLOAT
+  metadata: JSONB
+  created_at: TIMESTAMPTZ
+  UNIQUE(source_node_id, target_node_id, relationship_type)
+}
+
+ENTITY "recommendations" as recommendations {
+  + id: UUID <<PK>>
+  --
+  # user_id: UUID <<FK>>
+  # source_container_id: UUID <<FK>>
+  # recommended_container_id: UUID <<FK>>
+  score: FLOAT
+  reason: VARCHAR(500)
+  recommendation_type: VARCHAR(50)
+  viewed: BOOLEAN
+  created_at: TIMESTAMPTZ
+}
+
+ENTITY "search_log" as search_log {
+  + id: UUID <<PK>>
+  --
+  # user_id: UUID <<FK>>
+  query: TEXT
+  search_type: VARCHAR(20)
+  result_count: INTEGER
+  execution_ms: INTEGER
+  created_at: TIMESTAMPTZ
+}
+
+ENTITY "activity_feed" as activity_feed {
+  + id: UUID <<PK>>
+  --
+  # user_id: UUID <<FK>>
+  activity_type: VARCHAR(50)
+  # container_id: UUID <<FK>>
+  description: TEXT
+  metadata: JSONB
+  created_at: TIMESTAMPTZ
+}
+
+' ============================================
+' RELATIONSHIPS
+' ============================================
+
+users ||--o{ containers : "owns"
+users ||--o{ tags : "owns"
+users ||--o{ pins : "owns"
+users ||--o{ knowledge_nodes : "owns"
+users ||--o{ recommendations : "receives"
+users ||--o{ search_log : "performs"
+users ||--o{ activity_feed : "has"
+users ||--o{ refresh_tokens : "has"
+
+containers ||--o{ timeline_events : "has"
+containers ||--o{ snapshots : "has"
+containers ||--o| ai_contexts : "has AI context"
+containers ||--o{ container_tags : "tagged with"
+containers ||--o{ pins : "pinned by"
+containers ||--o{ knowledge_nodes : "source for"
+
+tags ||--o{ container_tags : "used in"
+
+knowledge_nodes ||--o{ knowledge_edges : "source of"
+knowledge_nodes ||--o{ knowledge_edges : "target of"
+
+container_tags }o--|| container_tags : ""
+
+@enduml

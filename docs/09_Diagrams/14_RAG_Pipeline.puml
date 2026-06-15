@@ -1,0 +1,61 @@
+@startuml ContextOS_RAG_Pipeline
+skinparam backgroundColor #f8f9fa
+
+title RAG Pipeline Diagram
+
+actor "User" as USER
+participant "UI" as UI
+participant "RAGService" as RAG
+participant "ContextRetriever" as RET
+participant "EmbeddingService" as EMB
+participant "VectorSearch" as VS
+participant "PromptBuilder" as PB
+participant "OllamaClient" as OLL
+participant "ResponseFormatter" as FMT
+database "pgvector" as VEC
+database "PostgreSQL" as PG
+
+USER -> UI : "What have I learned about\ncognitive biases?"
+
+== Phase 1: Retrieve ==
+UI -> RAG : ask(question)
+RAG -> EMB : generateEmbedding(question)
+EMB --> RAG : float[768]
+
+RAG -> RET : retrieve(embedding, userId)
+RET -> VS : similaritySearch(embedding, 5)
+VS -> VEC : cosine similarity search
+VEC --> VS : Top 5 results with scores
+VS --> RET : List<VectorResult>
+
+RET -> RET : For each result,\nload full content from PG
+RET -> PG : SELECT title, description, metadata\nFROM containers WHERE id IN (?)
+PG --> RET : Full container data
+RET --> RAG : List<ContextSource> with content
+
+== Phase 2: Augment ==
+RAG -> PB : buildPrompt(question, sources)
+PB -> PB : Construct system prompt
+PB -> PB : Add context sources [1..5]
+PB -> PB : Add user question
+PB --> RAG : Contextualized prompt
+
+== Phase 3: Generate ==
+RAG -> OLL : generate(prompt, temperature=0.3)
+OLL -> OLL : Mistral 7B inference
+OLL --> RAG : Raw LLM response
+
+RAG -> FMT : format(rawAnswer, sources)
+FMT -> FMT : Extract [Source N] citations
+FMT -> FMT : Clean answer text
+FMT -> FMT : Calculate confidence score
+FMT --> RAG : RAGResponse with citations
+
+RAG --> UI : Answer + sources + confidence
+
+UI -> UI : Display with streaming effect
+UI -> USER : "Based on your reading of\n'Thinking, Fast and Slow'..."
+
+note right of OLL : Model: Mistral 7B Q4\nTemperature: 0.3\nMax tokens: 1024
+
+@enduml

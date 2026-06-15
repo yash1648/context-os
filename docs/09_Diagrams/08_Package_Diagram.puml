@@ -1,0 +1,125 @@
+@startuml ContextOS_Package_Diagram
+skinparam backgroundColor #f8f9fa
+skinparam packageStyle rectangle
+
+title ContextOS Package Diagram
+
+package "com.contextos" as ROOT {
+  
+  package "config" as CONFIG {
+    [SecurityConfig]
+    [WebSocketConfig]
+    [RabbitMQConfig]
+    [RedisConfig]
+  }
+  
+  package "auth" as AUTH {
+    [AuthController]
+    [AuthService]
+    [JwtTokenProvider]
+    [JwtAuthenticationFilter]
+  }
+  
+  package "user" as USER {
+    [UserController]
+    [UserService]
+    [User]
+  }
+  
+  package "container" as CONT {
+    [ContainerController]
+    [ContainerService]
+    [ContainerMapper]
+    [ContainerValidator]
+    [Container]
+    [ContainerType]
+    [ContainerRepository]
+    [ContainerEvent]
+    [ContainerSpecification]
+    
+    package "type" as TYPE {
+      [BookContainer]
+      [MovieContainer]
+      [GoalContainer]
+      [HabitContainer]
+      [NoteContainer]
+      [KnowledgeAssetContainer]
+    }
+  }
+  
+  package "tag" as TAG {
+    [TagController]
+    [TagService]
+    [Tag]
+    [ContainerTag]
+  }
+  
+  package "snapshot" as SNAP {
+    [SnapshotController]
+    [SnapshotService]
+    [Snapshot]
+  }
+  
+  package "timeline" as TIM {
+    [TimelineController]
+    [TimelineService]
+    [TimelineEvent]
+  }
+  
+  package "search" as SRCH {
+    [SearchController]
+    [HybridSearchService]
+    [FullTextSearchService]
+    [SearchRanker]
+  }
+  
+  package "ai" as AI {
+    package "enrichment" as ENR {
+      [EnrichmentOrchestrator]
+      [EnrichmentConsumer]
+      [SummaryGenerator]
+      [AutoTagger]
+    }
+    package "embedding" as EMB {
+      [EmbeddingService]
+      [VectorSearchService]
+    }
+    package "rag" as RAG {
+      [RAGService]
+      [ContextRetriever]
+      [PromptBuilder]
+    }
+    package "recommendation" as REC {
+      [RecommendationService]
+      [RecommendationEngine]
+    }
+    package "knowledge" as KG {
+      [KnowledgeGraphService]
+      [EntityExtractor]
+      [GraphTraversalService]
+    }
+    package "client" as OLL {
+      [OllamaClient]
+    }
+  }
+  
+  package "websocket" as WS {
+    [WebSocketController]
+    [WebSocketSessionManager]
+  }
+  
+  package "common" as COMMON {
+    [GlobalExceptionHandler]
+    [ApiResponse]
+    [ErrorResponse]
+    [PageResponse]
+  }
+}
+
+note top of CONFIG : Spring Boot Configuration
+note top of AUTH : Authentication & Authorization
+note top of CONT : Core Container Management
+note top of AI : AI & ML Services
+note top of WS : Real-time Communication
+
+@enduml

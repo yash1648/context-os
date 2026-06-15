@@ -1,0 +1,67 @@
+@startuml ContextOS_Recommendation_Engine
+skinparam backgroundColor #f8f9fa
+
+title Recommendation Engine Flow
+
+actor "User" as USER
+participant "UI" as UI
+participant "RecommendationService" as RSVC
+participant "ContentBasedRecommender" as CB
+participant "UsageBasedRecommender" as UB
+participant "HybridRanker" as HR
+participant "VectorSearchService" as VS
+database "pgvector" as VEC
+database "PostgreSQL" as PG
+participant "Cache (Redis)" as CACHE
+
+USER -> UI : Open recommendations page
+UI -> RSVC : getRecommendations(userId, contextId?)
+
+RSVC -> CACHE : get(userId, contextId)
+alt Cache Hit
+  CACHE --> RSVC : Cached recommendations
+  RSVC --> UI : Return cached results
+else Cache Miss
+  RSVC -> RSVC : Prepare to generate
+
+  == Content-Based ==
+  RSVC -> CB : recommend(userId, contextId, 20)
+  CB -> VS : similaritySearch(contextEmbedding, limit=20)
+  VS -> VEC : Cosine similarity search
+  VEC --> VS : 20 similar containers
+  VS --> CB : Vector search results
+  CB -> CB : Calculate tag overlap scores
+  CB -> CB : Compute combined scores\n(similarity * 0.7 + tags * 0.3)
+  CB -> PG : Load container details
+  PG --> CB : Container metadata
+  CB --> RSVC : 20 content-based recommendations
+
+  == Usage-Based ==
+  RSVC -> UB : recommend(userId, 10)
+  UB -> PG : User's preferred types
+  PG --> UB : Top 3 container types
+  UB -> PG : Popular containers in types
+  PG --> UB : Candidates
+  UB --> RSVC : 10 usage-based recommendations
+
+  == Hybrid Ranking ==
+  RSVC -> HR : rank(contentBased, usageBased, limit=10)
+  HR -> HR : Merge by container ID
+  HR -> HR : Apply diversity (max 2 per type)
+  HR --> RSVC : 10 ranked recommendations
+
+  RSVC -> CACHE : put(userId, contextId, result)
+  RSVC --> UI : Recommendations
+end
+
+UI -> UI : Display recommendation cards
+UI -> USER : "Based on your reading..."
+
+== Feedback Loop ==
+USER -> UI : Click "Helpful" on recommendation
+UI -> RSVC : submitFeedback(recId, helpful=true)
+RSVC -> PG : Update recommendation record
+RSVC -> RSVC : Improve future recommendations
+RSVC --> UI : Feedback recorded
+
+@enduml

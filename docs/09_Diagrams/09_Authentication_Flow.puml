@@ -1,0 +1,67 @@
+@startuml ContextOS_Authentication_Flow
+skinparam backgroundColor #f8f9fa
+
+title Authentication Flow - Login
+
+actor "User" as USER
+participant "Browser" as UI
+participant "Nginx" as NGX
+participant "AuthController" as CTRL
+participant "AuthService" as SVC
+participant "JwtService" as JWT
+participant "UserDetailsService" as UDS
+database "PostgreSQL" as DB
+database "Redis" as RD
+
+== Login ==
+USER -> UI : Enter email & password
+UI -> NGX : POST /api/v1/auth/login
+NGX -> CTRL : Forward request
+CTRL -> SVC : authenticate(email, password)
+SVC -> UDS : loadUserByUsername(email)
+UDS -> DB : SELECT * FROM users WHERE email = ?
+DB --> UDS : User record
+UDS --> SVC : UserPrincipal
+SVC -> SVC : Check password (BCrypt)
+alt Invalid password
+  SVC --> CTRL : BadCredentialsException
+  CTRL --> UI : 401 Unauthorized
+  UI -> USER : Show error message
+else Valid
+  SVC -> JWT : generateAccessToken(user)
+  JWT --> SVC : access_token (15 min)
+  SVC -> JWT : generateRefreshToken(user)
+  JWT --> SVC : refresh_token (30 days)
+  SVC -> DB : Save refresh token
+  SVC -> RD : Cache user session
+  SVC --> CTRL : AuthResponse
+  CTRL --> UI : 200 + tokens
+  UI -> UI : Store tokens (memory)
+  UI -> USER : Redirect to dashboard
+end
+
+== Token Refresh ==
+USER -> UI : API call returns 401
+UI -> CTRL : POST /auth/refresh + refresh_token
+CTRL -> JWT : validateRefreshToken(token)
+alt Token valid
+  JWT -> JWT : generateAccessToken(user)
+  JWT --> CTRL : New access token
+  CTRL --> UI : 200 + new token
+  UI -> UI : Retry original request
+else Token expired
+  CTRL --> UI : 401 - Session expired
+  UI -> USER : Redirect to login
+end
+
+== Logout ==
+USER -> UI : Click logout
+UI -> CTRL : POST /auth/logout + refresh_token
+CTRL -> SVC : revokeRefreshToken(token)
+SVC -> DB : Mark token as revoked
+SVC -> RD : Remove session
+CTRL --> UI : 200 OK
+UI -> UI : Clear tokens
+UI -> USER : Redirect to login
+
+@enduml

@@ -1,0 +1,62 @@
+@startuml ContextOS_Container_Architecture
+!define RECTANGLE class
+
+skinparam backgroundColor #f8f9fa
+skinparam componentStyle rectangle
+
+title ContextOS Container Architecture
+
+package "Single Page Application" as SPA {
+  [React App\n(TypeScript)] as REACT
+  [Zustand Store] as ZUSTAND
+  [TanStack Query\nCache] as TQ
+}
+
+package "API Gateway" as GATEWAY {
+  [Nginx\nReverse Proxy] as NGINX
+}
+
+package "Spring Boot Application" as SPRING {
+  [Spring Security\n(JWT Auth)] as SEC
+  [Container Service] as CONT
+  [Tag Service] as TAG
+  [Snapshot Service] as SNAP
+  [Timeline Service] as TIM
+  [Search Service] as SEARCH
+  [AI Service] as AI_SVC
+  [WebSocket Handler] as WS
+  [Event Publisher] as EVT
+}
+
+package "Data Stores" as DATA {
+  database "PostgreSQL\n(Relational + pgvector)" as PG
+  database "Redis\n(Cache + Pub/Sub)" as RD
+}
+
+package "Message Broker" as BROKER {
+  queue "RabbitMQ\n(Async Events)" as MQ
+}
+
+package "AI Services" as AI {
+  [Ollama\nLLM Server] as OLL
+}
+
+SPA --> GATEWAY : HTTPS
+GATEWAY --> SPRING : Proxy /api/*
+GATEWAY --> SPA : Static files
+
+SPA --> WS : WebSocket (STOMP)
+
+SPRING --> DATA : JPA + JDBC
+SPRING --> DATA : Redis Cache
+SPRING --> BROKER : AMQP Events
+SPRING --> AI : HTTP (AI requests)
+
+BROKER --> SPRING : Async Consumers
+
+note right of SPA : Port 5173 (dev)\nPort 80 (prod)
+note right of SPRING : Port 8080
+note right of DATA : Port 5432 (PG)\nPort 6379 (Redis)
+note right of AI : Port 11434
+
+@enduml

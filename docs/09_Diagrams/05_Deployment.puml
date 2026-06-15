@@ -1,0 +1,86 @@
+@startuml ContextOS_Deployment
+skinparam backgroundColor #f8f9fa
+skinparam componentStyle rectangle
+
+title ContextOS Deployment Diagram
+
+node "User Device" {
+  [Browser\n(Chrome/Firefox)] as BR
+  [VSCode\n(Extension)] as VS
+  [Mobile\nBrowser] as MOB
+}
+
+node "Docker Host" as DOCKER {
+  frame "Frontend" {
+    component "Nginx" as NGINX_FE {
+      [Static Files\n(React SPA)] as SPA
+      [TLS Termination] as TLS
+    }
+  }
+
+  frame "Application" {
+    component "Spring Boot" as API_1 {
+      [REST API] as REST
+      [WebSocket] as WS
+    }
+    component "Spring Boot" as API_2 {
+      [REST API] as REST2
+      [WebSocket] as WS2
+    }
+  }
+
+  frame "Data Layer" {
+    database "PostgreSQL 16\n(pgvector)" as PG {
+      [Relational Data] as REL
+      [Vector Embeddings] as VEC
+    }
+    database "Redis 7\n(Cache)" as RD
+  }
+
+  frame "Message Broker" {
+    queue "RabbitMQ 3" as MQ
+  }
+
+  frame "AI Layer" {
+    [Ollama\n(Mistral 7B)] as OLL
+  }
+
+  frame "Monitoring" {
+    [Prometheus] as PROM
+    [Grafana] as GRAF
+  }
+}
+
+node "External" {
+  [GitHub\n(OAuth2)] as GH
+  [SMTP Server] as SMTP
+}
+
+BR --> NGINX_FE : HTTPS (443)
+VS --> NGINX_FE : HTTPS (443)
+MOB --> NGINX_FE : HTTPS (443)
+
+NGINX_FE --> API_1 : Proxy
+NGINX_FE --> API_2 : Proxy (round-robin)
+NGINX_FE --> SPA : Static files
+
+API_1 --> PG : 5432
+API_2 --> PG : 5432
+API_1 --> RD : 6379
+API_2 --> RD : 6379
+API_1 --> MQ : 5672
+API_2 --> MQ : 5672
+API_1 --> OLL : 11434
+API_2 --> OLL : 11434
+
+API_1 --> SMTP : 587
+API_2 --> GH : 443
+
+PROM --> API_1 : /actuator/prometheus
+PROM --> PG : 9187
+PROM --> RD : 9121
+GRAF --> PROM : datasource
+
+note right of OLL : GPU recommended\nCPU fallback (Q4)
+
+@enduml

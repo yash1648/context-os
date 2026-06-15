@@ -1,0 +1,48 @@
+@startuml ContextOS_Vector_Search_Flow
+skinparam backgroundColor #f8f9fa
+
+title Vector Search Flow
+
+participant "Client" as CLIENT
+participant "SearchController" as CTRL
+participant "VectorSearchService" as VSVC
+participant "EmbeddingService" as EMB
+participant "OllamaClient" as OLL
+database "pgvector\n(PostgreSQL)" as PG
+
+== Query Processing ==
+CLIENT -> CTRL : POST /api/v1/search\n{ query: "machine learning\nbooks", type: "SEMANTIC" }
+
+CTRL -> VSVC : search(embedding, filters, limit)
+
+CTRL -> EMB : generateEmbedding("machine learning books")
+EMB -> OLL : POST /api/embed
+note right: Model: nomic-embed-text\nInput: "machine learning books"
+
+OLL --> EMB : [0.023, -0.145, 0.567, ...]
+note right: 768-dimensional float vector
+
+EMB --> CTRL : float[768] queryVector
+
+== Vector Search ==
+CTRL -> VSVC : similaritySearch(queryVector, userId, limit=20)
+VSVC -> PG : SELECT id, title, type,\n       1 - (embedding <=> ?) AS similarity\nFROM containers\nWHERE owner_id = ?\n  AND embedding IS NOT NULL\nORDER BY embedding <=> ?\nLIMIT 20
+
+note right of PG : IVFFlat index with\nlists=100, probes=10
+
+PG --> VSVC : 20 results with scores
+
+== Post-Processing ==
+VSVC -> VSVC : Filter by status != DELETED
+VSVC -> VSVC : Apply additional filters
+VSVC -> VSVC : Load highlights from content
+VSVC --> CTRL : List<SearchResult>
+
+CTRL -> CTRL : Build SearchResponse
+CTRL --> CLIENT : 200 OK
+note right: Response time: ~150ms
+
+== Index Configuration ==
+note over PG : IVFFlat Index\nlists: 100 (sqrt(n) for 10k vectors)\nprobes: 10 (for 90% recall)\nDistance: cosine
+
+@enduml

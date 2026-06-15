@@ -1,0 +1,59 @@
+@startuml ContextOS_WebSocket_Flow
+skinparam backgroundColor #f8f9fa
+
+title WebSocket Communication Flow
+
+participant "Browser A" as BR_A
+participant "Browser B" as BR_B
+participant "Nginx\n(WS Proxy)" as NGX
+participant "Spring WebSocket\nHandler" as WS
+participant "Redis\nPub/Sub" as RD
+participant "Backend\nService" as SVC
+participant "AI Service" as AI
+
+== Connection Setup ==
+BR_A -> NGX : HTTP Upgrade Request\n/ws
+NGX -> WS : Forward upgrade
+WS -> WS : Create session
+WS --> BR_A : 101 Switching Protocols
+WS -> WS : Register session\nfor user UUID-1
+
+BR_B -> NGX : HTTP Upgrade Request\n/ws  
+NGX -> WS : Forward upgrade
+WS --> BR_B : 101 Switching Protocols
+
+note right of WS : STOMP over WebSocket\nSockJS fallback available
+
+== Subscribe ==
+BR_A -> WS : SUBSCRIBE /user/queue/notifications
+BR_A -> WS : SUBSCRIBE /topic/containers/{id}
+
+BR_B -> WS : SUBSCRIBE /user/queue/notifications
+
+== Container Update (Browser A creates container) ==
+BR_A -> WS : SEND /app/container.update\n{ containerId, type, title }
+WS -> SVC : Handle container creation
+WS -> RD : PUBLISH container.update
+RD -> WS : SUBSCRIBE to updates
+WS -> BR_B : MESSAGE /topic/containers/{id}\n{ type: "CREATED", payload: {...} }
+WS -> BR_A : MESSAGE /user/queue/notifications\n{ type: "SUCCESS", message: "Created" }
+
+== AI Enrichment Progress ==
+AI -> WS : sendToUser(userId, "/queue/enrichment",\n{ stage: "EMBEDDING", progress: 25 })
+WS -> BR_A : MESSAGE /user/queue/enrichment\n{ stage: "EMBEDDING", progress: 25 }
+
+AI -> WS : sendToUser(userId, "/queue/enrichment",\n{ stage: "COMPLETED", progress: 100 })
+WS -> BR_A : MESSAGE /user/queue/enrichment\n{ stage: "COMPLETED" }
+
+== Disconnect & Recovery ==
+BR_A -> WS : DISCONNECT
+WS -> WS : Remove session
+WS -> RD : UNSUBSCRIBE
+
+... 5 seconds later ...
+BR_A -> NGX : HTTP Upgrade Request\n/ws (reconnect)
+WS -> BR_A : 101 Switching Protocols
+WS -> WS : Re-register session
+WS -> RD : Re-subscribe to topics
+
+@enduml

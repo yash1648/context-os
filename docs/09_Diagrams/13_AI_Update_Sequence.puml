@@ -1,0 +1,59 @@
+@startuml ContextOS_AI_Update_Sequence
+skinparam backgroundColor #f8f9fa
+
+title AI Enrichment Update Sequence
+
+participant "ContainerService" as CSVC
+queue "RabbitMQ" as MQ
+participant "EnrichmentConsumer" as EC
+participant "OllamaClient" as OLL
+participant "EmbeddingService" as EMB
+participant "AIContextRepository" as AI_REPO
+participant "VectorSearchRepository" as VEC
+participant "WebSocket" as WS
+participant "UI" as UI
+
+== Container Updated Event ==
+CSVC -> MQ : container.updated\n{ containerId, type, title, ... }
+
+== Consumer Starts ==
+MQ -> EC : Deliver message
+EC -> EC : Deserialize event
+EC -> EC : Begin enrichment
+
+== Step 1: Embedding ==
+EC -> EMB : generateEmbedding(content)
+EMB -> OLL : POST /api/embed\n{ model: "nomic-embed-text",\n  input: "..." }
+OLL --> EMB : { embedding: float[768] }
+EMB --> EC : float[] embedding
+EC -> VEC : storeEmbedding(containerId, embedding)
+EC -> WS : send(userId, ENRICHMENT_PROGRESS { stage: "EMBEDDING", progress: 25 })
+
+== Step 2: Summary ==
+EC -> OLL : generate(\"Summarize this content...\")
+OLL --> EC : "This book explores..."
+EC -> AI_REPO : updateSummary(containerId, summary)
+EC -> WS : send(userId, ENRICHMENT_PROGRESS { stage: "SUMMARIZATION", progress: 50 })
+
+== Step 3: Auto-Tag ==
+EC -> OLL : generate(\"Suggest tags for...\")
+OLL --> EC : "machine learning, AI, neural networks"
+EC -> AI_REPO : updateAutoTags(containerId, tags, scores)
+EC -> WS : send(userId, ENRICHMENT_PROGRESS { stage: "TAGGING", progress: 75 })
+
+== Step 4: Relationships ==
+EC -> EC : discoverRelationships(container)
+EC -> AI_REPO : updateRelationships(containerId, relationships)
+EC -> WS : send(userId, ENRICHMENT_PROGRESS { stage: "RELATIONSHIPS", progress: 90 })
+
+== Complete ==
+EC -> AI_REPO : markComplete(containerId)
+EC -> WS : send(userId, ENRICHMENT_COMPLETED { containerId })
+
+WS --> UI : WebSocket message
+UI -> UI : Update AI context section
+UI -> UI : Show enrichment results
+
+note right of EC : Full enrichment cycle\nTarget: < 10 seconds\nper container
+
+@enduml

@@ -1,0 +1,83 @@
+@startuml ContextOS_High_Level_Architecture
+!define LAYER rectangle
+
+skinparam backgroundColor #f8f9fa
+skinparam componentStyle rectangle
+
+title ContextOS High-Level Architecture
+
+LAYER "#F0F4FF" "Presentation Layer" as PRES {
+  [React SPA] as SPA
+  [Browser Extension] as EXT
+  [VSCode Extension] as VS
+}
+
+LAYER "#F0FFF4" "API Gateway" as GATE {
+  [Nginx / TLS] as NGX
+  [Spring Security] as SEC
+  [Rate Limiter] as RL
+}
+
+LAYER "#FFFBF0" "Application Layer" as APP {
+  [Container] as CONT
+  [Tag] as TAG
+  [Snapshot] as SNAP
+  [Timeline] as TIM
+  [Search] as SRCH
+  [Auth] as AUTH
+  [User] as USER
+  [Pin] as PIN
+  [Activity] as ACT
+}
+
+LAYER "#FFF0F5" "AI Layer" as AI_LAYER {
+  [Context Engine] as CTX
+  [Embedding] as EMB
+  [RAG Pipeline] as RAG
+  [Recommendation] as REC
+  [Knowledge Graph] as KG
+}
+
+LAYER "#F0F0FF" "Infrastructure" as INFRA {
+  [PostgreSQL\n(pgvector)] as PG
+  [Redis] as RD
+  [RabbitMQ] as MQ
+  [Ollama] as OLL
+}
+
+SPA -down-> NGX : HTTPS
+EXT -down-> NGX : HTTPS
+VS -down-> NGX : HTTPS
+NGX -down-> SEC : authenticate
+SEC -right-> CONT : CRUD
+SEC -right-> TAG : manage
+SEC -right-> SNAP : version
+SEC -right-> SRCH : query
+SEC -right-> AUTH : login
+SEC -right-> CTX : enrich
+
+CONT -down-> PG : persist
+TAG -down-> PG : persist
+SNAP -down-> PG : persist
+TIM -down-> PG : persist
+SRCH -down-> PG : search
+AUTH -down-> PG : users
+CTX -down-> PG : context
+
+CTX -right-> EMB : embed
+CTX -right-> RAG : retrieve
+CTX -right-> REC : recommend
+CTX -right-> KG : graph
+EMB -down-> OLL : model
+RAG -down-> OLL : model
+EMB -down-> PG : store vector
+
+CONT -right-> MQ : events
+SNAP -right-> MQ : events
+MQ -right-> CTX : consume
+
+CONT -right-> RD : cache
+TAG -right-> RD : cache
+SRCH -right-> RD : cache
+
+@enduml

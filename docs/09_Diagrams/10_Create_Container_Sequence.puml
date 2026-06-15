@@ -1,0 +1,51 @@
+@startuml ContextOS_Create_Container_Sequence
+skinparam backgroundColor #f8f9fa
+
+title Create Container Sequence
+
+actor "User" as USER
+participant "UI" as UI
+participant "ContainerController" as CTRL
+participant "ContainerService" as SVC
+participant "ContainerValidator" as VAL
+participant "ContainerRepository" as REPO
+participant "EventPublisher" as EVT
+queue "RabbitMQ" as MQ
+participant "EnrichmentConsumer" as ENR
+participant "WebSocket" as WS
+database "PostgreSQL" as DB
+
+USER -> UI : Fill form & click Create
+UI -> UI : Validate form (Zod)
+UI -> CTRL : POST /api/v1/containers
+CTRL -> SVC : createContainer(request)
+SVC -> VAL : validateCreate(request)
+VAL --> SVC : Valid
+SVC -> SVC : Build container entity
+SVC -> REPO : save(container)
+REPO -> DB : INSERT INTO containers
+DB --> REPO : Container saved
+REPO --> SVC : Container with ID
+SVC -> EVT : publish(ContainerCreatedEvent)
+SVC --> CTRL : ContainerResponse (201)
+CTRL --> UI : JSON response
+
+UI -> UI : Show success toast
+UI -> USER : Container created
+
+== Async Enrichment ==
+EVT -> MQ : container.created event
+MQ -> ENR : Consume event
+ENR -> ENR : Generate embedding
+ENR -> ENR : Generate summary
+ENR -> ENR : Auto-tagging
+ENR -> ENR : Discover relationships
+ENR -> WS : Enrichment progress
+WS -> UI : WebSocket update
+
+UI -> UI : Update AI context section
+UI -> USER : See AI enrichment appear
+
+note over ENR : This happens asynchronously\nUI is not blocked
+
+@enduml

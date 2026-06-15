@@ -1,0 +1,105 @@
+@startuml ContextOS_Low_Level_Architecture
+skinparam backgroundColor #f8f9fa
+skinparam componentStyle rectangle
+
+title ContextOS Low-Level Architecture
+
+package "Controllers" {
+  [AuthController] as AUTH_C
+  [ContainerController] as CONT_C
+  [TagController] as TAG_C
+  [SnapshotController] as SNAP_C
+  [TimelineController] as TIM_C
+  [SearchController] as SRCH_C
+  [PinController] as PIN_C
+  [AIController] as AI_C
+  [DashboardController] as DASH_C
+}
+
+package "Services" {
+  [AuthService] as AUTH_S
+  [ContainerService] as CONT_S
+  [TagService] as TAG_S
+  [SnapshotService] as SNAP_S
+  [TimelineService] as TIM_S
+  [SearchService] as SRCH_S
+  [HybridSearchService] as HYBRID_S
+  [PinService] as PIN_S
+  [EnrichmentService] as ENRICH_S
+  [RecommendationService] as REC_S
+  [RAGService] as RAG_S
+  [EmbeddingService] as EMB_S
+  [KnowledgeGraphService] as KG_S
+  [DashboardService] as DASH_S
+  [ActivityService] as ACT_S
+}
+
+package "Repositories" {
+  [UserRepository] as USER_R
+  [ContainerRepository] as CONT_R
+  [TagRepository] as TAG_R
+  [SnapshotRepository] as SNAP_R
+  [TimelineRepository] as TIM_R
+  [PinRepository] as PIN_R
+  [AIContextRepository] as AI_R
+  [KnowledgeNodeRepository] as KN_R
+  [KnowledgeEdgeRepository] as KE_R
+}
+
+package "Infrastructure" {
+  [JwtTokenProvider] as JWT
+  [EventPublisher] as EVT_PUB
+  [WebSocketController] as WS_C
+  [OllamaClient] as OLL_C
+  [VectorSearchRepository] as VEC_R
+}
+
+AUTH_C --> AUTH_S
+CONT_C --> CONT_S
+TAG_C --> TAG_S
+SNAP_C --> SNAP_S
+TIM_C --> TIM_S
+SRCH_C --> SRCH_S
+PIN_C --> PIN_S
+AI_C --> ENRICH_S
+AI_C --> RAG_S
+AI_C --> REC_S
+DASH_C --> DASH_S
+
+CONT_S --> CONT_R
+CONT_S --> TAG_R
+CONT_S --> EVT_PUB
+CONT_S -.-> WS_C : WebSocket update
+
+TAG_S --> TAG_R
+SNAP_S --> SNAP_R
+TIM_S --> TIM_R
+PIN_S --> PIN_R
+
+SRCH_S --> HYBRID_S
+HYBRID_S --> CONT_R : full-text
+HYBRID_S --> VEC_R : vector
+
+ENRICH_S --> EMB_S
+ENRICH_S --> OLL_C
+ENRICH_S --> AI_R
+EMB_S --> OLL_C
+EMB_S --> VEC_R
+
+RAG_S --> HYBRID_S : retrieve
+RAG_S --> OLL_C : generate
+
+REC_S --> HYBRID_S : similar
+REC_S --> CONT_R
+
+KG_S --> KN_R
+KG_S --> KE_R
+KG_S --> OLL_C : extract
+
+DASH_S --> CONT_R
+DASH_S --> ACT_S
+
+AUTH_S --> USER_R
+AUTH_S --> JWT
+
+@enduml

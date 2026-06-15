@@ -1,0 +1,48 @@
+@startuml ContextOS_System_Context
+!define RECTANGLE class
+
+skinparam backgroundColor #f8f9fa
+skinparam defaultFontName sans-serif
+skinparam defaultFontSize 12
+
+actor "User" as User
+actor "Admin" as Admin
+
+rectangle "ContextOS System" as COS {
+  rectangle "Web Application" as WEB
+  rectangle "REST API" as API
+  rectangle "AI Engine" as AI
+  rectangle "Database" as DB
+  rectangle "Search Engine" as SEARCH
+}
+
+rectangle "External Systems" as EXT {
+  rectangle "Ollama\n(Local LLM)" as OLL
+  rectangle "Email Service" as SMTP
+  rectangle "GitHub / Google\n(OAuth2)" as OAUTH
+  rectangle "Browser\n(Extension)" as BR
+  rectangle "VSCode\n(Extension)" as VS
+}
+
+User --> WEB : "Manages containers\nSearches knowledge\nAsks AI questions"
+User --> API : "Direct API access\n(Automation)"
+
+Admin --> API : "User management\nSystem configuration"
+
+WEB --> API : "HTTP/JSON"
+API --> DB : "CRUD operations"
+API --> SEARCH : "Full-text + semantic"
+API --> AI : "Enrichment requests"
+AI --> OLL : "LLM inference\nEmbedding generation"
+
+API --> SMTP : "Password reset\nNotifications"
+API --> OAUTH : "OAuth2 login"
+BR --> API : "Save web pages"
+VS --> API : "Code snippets"
+
+DB --> SEARCH : "Vector embeddings"
+
+note right of OLL : Local AI inference\nNo cloud dependency\nPrivacy preserving
+note bottom of EXT : External systems\nare optional\ndependencies
+
+@enduml

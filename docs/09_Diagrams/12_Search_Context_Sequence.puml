@@ -1,0 +1,56 @@
+@startuml ContextOS_Search_Context_Sequence
+skinparam backgroundColor #f8f9fa
+
+title Search & Context Retrieval Sequence
+
+actor "User" as USER
+participant "UI" as UI
+participant "SearchController" as CTRL
+participant "HybridSearchService" as HYBRID
+participant "FullTextSearchService" as FTS
+participant "VectorSearchService" as VS
+participant "EmbeddingService" as EMB
+participant "SearchRanker" as RANKER
+database "PostgreSQL" as PG
+database "pgvector" as VEC
+
+USER -> UI : Type search query\n"books about machine learning"
+
+UI -> UI : Debounce 300ms
+UI -> CTRL : POST /api/v1/search
+note right: Body: { "query": "books about\nmachine learning", "type": "HYBRID" }
+
+CTRL -> HYBRID : search(query, filters)
+
+== Parallel Search Phase ==
+HYBRID -> EMB : generateEmbedding(query)
+EMB --> HYBRID : float[768] embedding
+
+group Vector Search
+  HYBRID -> VS : similaritySearch(embedding, limit=20)
+  VS -> VEC : SELECT ... ORDER BY embedding <=> ?
+  VEC --> VS : Top 20 vector results
+  VS --> HYBRID : List<VectorResult>
+end
+
+group Full-Text Search
+  HYBRID -> FTS : fullTextSearch(query, limit=20)
+  FTS -> PG : SELECT ... WHERE to_tsvector() @@ to_tsquery()
+  PG --> FTS : Top 20 text results
+  FTS --> HYBRID : List<TextResult>
+end
+
+== Merge & Rank ==
+HYBRID -> RANKER : rrfMerge(vectorResults, textResults)
+RANKER -> RANKER : Compute Reciprocal Rank Fusion scores
+RANKER --> HYBRID : List<SearchResult> (ranked)
+
+HYBRID -> HYBRID : Apply filters (type, tags, etc.)
+HYBRID --> CTRL : Top 10 results
+
+CTRL -> CTRL : Enrich with snippets
+CTRL --> UI : SearchResponse
+UI -> UI : Render results with highlights
+UI -> USER : Results displayed (245ms)
+
+@enduml

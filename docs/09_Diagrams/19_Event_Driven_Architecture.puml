@@ -1,0 +1,71 @@
+@startuml ContextOS_Event_Driven
+skinparam backgroundColor #f8f9fa
+
+title Event-Driven Architecture Diagram
+
+queue "container.exchange\n(Topic)" as CONT_EX
+queue "ai.exchange\n(Topic)" as AI_EX
+queue "activity.exchange\n(Topic)" as ACT_EX
+queue "dead.letter.exchange\n(Direct)" as DLX
+
+queue "container.enrichment\nQueue" as ENR_Q
+queue "ai.embedding\nQueue" as EMB_Q
+queue "activity.log\nQueue" as ACT_Q
+queue "dead.letter\nQueue" as DLQ
+
+rectangle "Producers" {
+  [ContainerService] as CONT_SVC
+  [SnapshotService] as SNAP_SVC
+  [TagService] as TAG_SVC
+  [SearchService] as SRCH_SVC
+  [UserService] as USER_SVC
+}
+
+rectangle "Consumers" {
+  [EnrichmentConsumer] as ENR_C
+  [EmbeddingConsumer] as EMB_C
+  [ActivityConsumer] as ACT_C
+  [SearchIndexConsumer] as SRCH_C
+}
+
+rectangle "Services" {
+  [AIContextService] as AI_CTX
+  [EmbeddingService] as EMB_S
+  [ActivityService] as ACT_S
+  [SearchIndexService] as SRCH_S
+}
+
+CONT_SVC --> CONT_EX : container.created\ncontainer.updated\ncontainer.deleted
+SNAP_SVC --> CONT_EX : snapshot.created
+TAG_SVC --> CONT_EX : tag.assigned\ntag.removed
+USER_SVC --> CONT_EX : user.registered\nuser.logged_in
+
+CONT_EX --> ENR_Q : container.#
+ENR_Q --> ENR_C : consume
+ENR_C --> AI_CTX : enrich
+ENR_C --> AI_EX : enrichment.completed
+
+AI_EX --> EMB_Q : embedding.requested
+EMB_Q --> EMB_C : consume
+EMB_C --> EMB_S : generate embedding
+
+ENR_C --> ACT_EX : activity.#
+
+ACT_EX --> ACT_Q : activity.#
+ACT_Q --> ACT_C : consume
+ACT_C --> ACT_S : record activity
+
+CONT_EX --> SRCH_Q : container.created\ncontainer.updated
+SRCH_Q --> SRCH_C : consume
+SRCH_C --> SRCH_S : index for search
+
+== Error Handling ==
+ENR_Q --> DLX : after 3 retries
+EMB_Q --> DLX : after 2 retries
+DLX --> DLQ : dead.letter
+DLQ --> DLQ : Monitor for alerts
+
+note right of ENR_Q : x-dead-letter-exchange:\ndead.letter.exchange\nx-message-ttl: 300000
+note right of DLQ : Manual replay\nvia admin UI\nAuto-purge after 7 days
+
+@enduml

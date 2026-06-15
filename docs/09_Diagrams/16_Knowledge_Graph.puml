@@ -1,0 +1,63 @@
+@startuml ContextOS_Knowledge_Graph
+skinparam backgroundColor #f8f9fa
+
+title Knowledge Graph Diagram
+
+rectangle "Container Layer" {
+  entity "Book:\nThinking, Fast and Slow" as BOOK
+  entity "Course:\nML Specialization" as COURSE
+  entity "Project:\nContextOS" as PROJECT
+  entity "Article:\nAttention Paper" as ARTICLE
+  entity "Movie:\nInterstellar" as MOVIE
+}
+
+rectangle "Entity Layer\n(Knowledge Nodes)" {
+  entity "Daniel\nKahneman" as PERSON1
+  entity "Cognitive\nScience" as CONCEPT1
+  entity "Behavioral\nEconomics" as CONCEPT2
+  entity "Machine\nLearning" as CONCEPT3
+  entity "Transformers" as CONCEPT4
+  entity "Neural\nNetworks" as CONCEPT5
+  entity "Physics" as CONCEPT6
+  entity "Christopher\nNolan" as PERSON2
+  entity "React" as TECH1
+  entity "PostgreSQL" as TECH2
+  entity "Spring\nBoot" as TECH3
+}
+
+rectangle "Relationship Layer\n(Knowledge Edges)" {
+  () "WRITTEN_BY" as R1
+  () "ABOUT" as R2
+  () "REFERENCES" as R3
+  () "PREREQUISITE" as R4
+  () "RELATED_TO" as R5
+  () "USES" as R6
+  () "DIRECTED_BY" as R7
+}
+
+BOOK --> PERSON1 : WRITTEN_BY
+BOOK --> CONCEPT1 : ABOUT
+BOOK --> CONCEPT2 : ABOUT
+COURSE --> CONCEPT3 : ABOUT
+COURSE --> CONCEPT4 : ABOUT
+COURSE --> CONCEPT5 : ABOUT
+ARTICLE --> CONCEPT4 : ABOUT
+ARTICLE --> CONCEPT5 : ABOUT
+PROJECT --> TECH1 : USES
+PROJECT --> TECH2 : USES
+PROJECT --> TECH3 : USES
+MOVIE --> CONCEPT6 : ABOUT
+MOVIE --> PERSON2 : DIRECTED_BY
+
+CONCEPT1 --> CONCEPT2 : RELATED_TO
+CONCEPT4 --> CONCEPT5 : RELATED_TO
+CONCEPT3 --> CONCEPT4 : PREREQUISITE
+CONCEPT5 --> CONCEPT4 : PREREQUISITE
+
+ARTICLE --> BOOK : REFERENCES
+COURSE --> ARTICLE : REFERENCES
+
+note right of BOOK : Container ID:\neuuid-1234
+note right of CONCEPT1 : Entity extracted\nby LLM NER
+
+@enduml

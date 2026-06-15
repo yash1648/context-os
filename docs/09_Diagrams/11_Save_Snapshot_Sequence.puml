@@ -1,0 +1,51 @@
+@startuml ContextOS_Save_Snapshot_Sequence
+skinparam backgroundColor #f8f9fa
+
+title Save Snapshot Sequence
+
+actor "User" as USER
+participant "UI" as UI
+participant "SnapshotController" as CTRL
+participant "SnapshotService" as SVC
+participant "SnapshotRepository" as REPO
+participant "ContainerService" as CSVC
+database "PostgreSQL" as DB
+
+USER -> UI : Open container detail
+UI -> CTRL : GET /containers/{id}
+CTRL -> CSVC : findById(id)
+CSVC --> CTRL : ContainerResponse
+CTRL --> UI : Container detail
+UI -> USER : View container state
+
+USER -> UI : Click "Create Snapshot"
+UI -> CTRL : POST /containers/{id}/snapshots
+note right: Body: { "label": "Before refactor" }
+
+CTRL -> SVC : createSnapshot(containerId, label)
+SVC -> CSVC : findById(containerId)
+CSVC --> SVC : Container entity
+
+SVC -> SVC : Capture container state\nSerialize to JSON
+SVC -> REPO : findLatestVersion(containerId)
+REPO -> DB : SELECT MAX(version) FROM snapshots
+DB --> REPO : currentVersion (e.g., 2)
+REPO --> SVC : 2
+
+SVC -> SVC : newVersion = 3
+SVC -> SVC : Build Snapshot entity
+SVC -> SVC : Store:\n- container_id\n- version: 3\n- snapshot_data: {full state}\n- label: "Before refactor"
+
+SVC -> REPO : save(snapshot)
+REPO -> DB : INSERT INTO snapshots
+DB --> REPO : Snapshot saved
+REPO --> SVC : Snapshot with ID
+
+SVC -> SVC : Record timeline event
+SVC --> CTRL : SnapshotResponse
+CTRL --> UI : 201 Created
+
+UI -> UI : Show snapshot in list
+UI -> USER : "Snapshot v3 created"
+
+@enduml

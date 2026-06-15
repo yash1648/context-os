@@ -1,0 +1,67 @@
+@startuml ContextOS_Monitoring
+skinparam backgroundColor #f8f9fa
+
+title Monitoring Architecture
+
+node "Metrics Collection" {
+  [Spring Boot Actuator\n/metrics, /prometheus] as ACT
+  [PostgreSQL Exporter\n:9187] as PG_EX
+  [Redis Exporter\n:9121] as RD_EX
+  [RabbitMQ Exporter\n:9419] as RMQ_EX
+  [Node Exporter\n:9100] as NODE_EX
+  [cAdvisor\n:8080] as CADV
+}
+
+node "Metrics Storage" {
+  database "Prometheus\nTime Series DB" as PROM
+  [Alertmanager\n:9093] as ALERT
+}
+
+node "Visualization" {
+  [Grafana\n:3000] as GRAF
+  [Kibana\n:5601] as KIB
+}
+
+node "Logging" {
+  [Filebeat] as FB
+  [Elasticsearch\n:9200] as ES
+  [Logstash\n:5000] as LS
+}
+
+node "Alerting & Notification" {
+  [Slack] as SLACK
+  [Email (SMTP)] as EMAIL
+  [PagerDuty] as PD
+}
+
+node "Tracing" {
+  [Jaeger\n:16686] as JAEG
+}
+
+ACT --> PROM : /actuator/prometheus
+PG_EX --> PROM : metrics
+RD_EX --> PROM : metrics
+RMQ_EX --> PROM : metrics
+NODE_EX --> PROM : metrics
+CADV --> PROM : metrics
+
+PROM --> ALERT : evaluate rules
+ALERT --> SLACK : webhook
+ALERT --> EMAIL : SMTP
+ALERT --> PD : API
+
+GRAF --> PROM : datasource
+
+FB --> LS : logs
+LS --> ES : index
+KIB --> ES : query
+
+ACT --> JAEG : tracing
+ACT --> JAEG : spans
+
+PROM --> PROM : retention: 30 days
+ES --> ES : retention: 30 days (logs)
+
+note right of PROM : Alert rules:\n- API down > 1min\n- Error rate > 5%\n- p95 latency > 1s\n- Queue depth > 1000\n- Disk < 10%
+
+@enduml

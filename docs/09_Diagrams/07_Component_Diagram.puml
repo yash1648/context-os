@@ -1,0 +1,85 @@
+@startuml ContextOS_Component_Diagram
+skinparam backgroundColor #f8f9fa
+skinparam componentStyle rectangle
+
+title ContextOS Component Diagram
+
+package "Frontend" {
+  [ContainerList] as CL
+  [ContainerDetail] as CD
+  [ContainerForm] as CF
+  [SearchBar] as SB
+  [AIAssistant] as AIA
+  [Dashboard] as DASH
+  [TagManager] as TM
+  [Settings] as SET
+}
+
+package "API Layer" {
+  [ContainerController] as CC
+  [TagController] as TC
+  [SearchController] as SC
+  [AIController] as AIC
+  [AuthController] as AUTHC
+  [DashboardController] as DC
+}
+
+package "Service Layer" {
+  [ContainerService] as CS
+  [TagService] as TS
+  [SearchService] as SS
+  [AuthService] as AS
+  [EnrichmentService] as ES
+  [RecommendationService] as RS
+  [RAGService] as RAGS
+}
+
+package "Data Layer" {
+  database "PostgreSQL" as PG
+  database "Redis" as RD
+}
+
+package "AI Layer" {
+  [EmbeddingService] as EMBS
+  [OllamaClient] as OLLC
+  [VectorSearch] as VS
+  [KnowledgeGraph] as KG
+}
+
+package "Events" {
+  [RabbitMQ] as MQ
+  [WebSocket] as WS
+}
+
+CL --> CC : HTTP
+CD --> CC : HTTP
+CF --> CC : HTTP
+SB --> SC : HTTP
+AIA --> AIC : HTTP
+DASH --> DC : HTTP
+TM --> TC : HTTP
+
+CC --> CS
+TC --> TS
+SC --> SS
+AIC --> ES
+AIC --> RAGS
+DC --> CS
+
+CS --> PG
+TS --> PG
+CS --> RD
+CS -.-> MQ : events
+CS -.-> WS : notify
+
+ES --> EMBS : embed
+ES --> OLLC : generate
+ES --> KG : graph
+ES --> WS : progress
+RAGS --> VS : search
+RAGS --> OLLC : generate
+
+EMBS --> OLLC : model
+EMBS --> PG : store
+
+@enduml
