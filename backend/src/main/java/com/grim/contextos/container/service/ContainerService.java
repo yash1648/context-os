@@ -1,6 +1,7 @@
 package com.grim.contextos.container.service;
 
 import com.grim.contextos.common.exception.ResourceNotFoundException;
+import com.grim.contextos.common.exception.ValidationException;
 import com.grim.contextos.container.dto.request.CreateContainerRequest;
 import com.grim.contextos.container.dto.response.ContainerListResponse;
 import com.grim.contextos.container.dto.response.ContainerResponse;
@@ -8,6 +9,7 @@ import com.grim.contextos.container.dto.search.ContainerSearchCriteria;
 import com.grim.contextos.container.model.Container;
 import com.grim.contextos.container.model.ContainerStatus;
 import com.grim.contextos.container.repository.ContainerRepository;
+import com.grim.contextos.container.validation.ContainerValidationService;
 import com.grim.contextos.timeline.model.TimelineEventType;
 import com.grim.contextos.timeline.service.TimelineService;
 import jakarta.persistence.criteria.Predicate;
@@ -24,14 +26,24 @@ public class ContainerService {
 
     private final ContainerRepository containerRepository;
     private final TimelineService timelineService;
+    private final ContainerValidationService validationService;
 
-    public ContainerService(ContainerRepository containerRepository, TimelineService timelineService) {
+    public ContainerService(ContainerRepository containerRepository, TimelineService timelineService,
+                            ContainerValidationService validationService) {
         this.containerRepository = containerRepository;
         this.timelineService = timelineService;
+        this.validationService = validationService;
     }
 
     @Transactional
     public ContainerResponse createContainer(CreateContainerRequest request) {
+        List<String> validationErrors = validationService.validate(request.metadata(), request.type());
+        if (!validationErrors.isEmpty()) {
+            throw new ValidationException("Container validation failed",
+                validationErrors.stream()
+                    .map(msg -> new ValidationException.FieldError("metadata", msg))
+                    .toList());
+        }
         Container container = new Container(request.name(), request.description(), request.type());
         container.setMetadata(request.metadata());
         container.setEnvVars(request.envVars());

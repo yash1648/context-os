@@ -7,6 +7,7 @@ import com.grim.contextos.container.model.ContainerStatus;
 import com.grim.contextos.container.model.ContainerType;
 import com.grim.contextos.container.repository.ContainerRepository;
 import com.grim.contextos.container.service.ContainerService;
+import com.grim.contextos.container.validation.ContainerValidationService;
 import com.grim.contextos.timeline.service.TimelineService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,12 +32,15 @@ class ContainerSearchServiceTest {
     @Mock
     private TimelineService timelineService;
 
+    @Mock
+    private ContainerValidationService validationService;
+
     private ContainerService containerService;
     private Container testContainer;
 
     @BeforeEach
     void setUp() {
-        containerService = new ContainerService(containerRepository, timelineService);
+        containerService = new ContainerService(containerRepository, timelineService, validationService);
 
         testContainer = new Container("my-app", "Production app container", ContainerType.SOFTWARE_PROJECT);
         testContainer.setId(UUID.randomUUID());

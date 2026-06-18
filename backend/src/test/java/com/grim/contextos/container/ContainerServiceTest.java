@@ -1,6 +1,7 @@
 package com.grim.contextos.container;
 
 import com.grim.contextos.common.exception.ResourceNotFoundException;
+import com.grim.contextos.common.exception.ValidationException;
 import com.grim.contextos.container.dto.request.CreateContainerRequest;
 import com.grim.contextos.container.dto.response.ContainerListResponse;
 import com.grim.contextos.container.dto.response.ContainerResponse;
@@ -9,6 +10,7 @@ import com.grim.contextos.container.model.ContainerStatus;
 import com.grim.contextos.container.model.ContainerType;
 import com.grim.contextos.container.repository.ContainerRepository;
 import com.grim.contextos.container.service.ContainerService;
+import com.grim.contextos.container.validation.ContainerValidationService;
 import com.grim.contextos.timeline.model.TimelineEventType;
 import com.grim.contextos.timeline.service.TimelineService;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,13 +38,17 @@ class ContainerServiceTest {
     @Mock
     private TimelineService timelineService;
 
+    @Mock
+    private ContainerValidationService validationService;
+
     private ContainerService containerService;
     private final UUID containerId = UUID.randomUUID();
     private Container testContainer;
 
     @BeforeEach
     void setUp() {
-        containerService = new ContainerService(containerRepository, timelineService);
+        containerService = new ContainerService(containerRepository, timelineService, validationService);
+        lenient().when(validationService.validate(any(), any())).thenReturn(List.of());
 
         testContainer = new Container("test-container", "A test container", ContainerType.BOOK);
         testContainer.setId(containerId);
@@ -61,6 +67,15 @@ class ContainerServiceTest {
         assertEquals("test-container", response.name());
         assertEquals(ContainerType.BOOK, response.type());
         assertEquals(ContainerStatus.PENDING, response.status());
+    }
+
+    @Test
+    void createContainerThrowsOnValidationFailure() {
+        var request = new CreateContainerRequest("bad-container", "desc", ContainerType.BOOK, "{\"isbn\":\"invalid\"}", null, null, null);
+        when(validationService.validate(any(), any())).thenReturn(List.of("ISBN must be a valid 13-digit ISBN-13"));
+
+        assertThrows(ValidationException.class, () -> containerService.createContainer(request));
+        verify(containerRepository, never()).save(any());
     }
 
     @Test
