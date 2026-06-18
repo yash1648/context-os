@@ -9,6 +9,7 @@ import com.grim.contextos.container.repository.ContainerRepository;
 import com.grim.contextos.container.service.ContainerService;
 import com.grim.contextos.container.validation.ContainerValidationService;
 import com.grim.contextos.timeline.service.TimelineService;
+import com.grim.contextos.websocket.event.DomainEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,12 +36,15 @@ class ContainerSearchServiceTest {
     @Mock
     private ContainerValidationService validationService;
 
+    @Mock
+    private DomainEventPublisher eventPublisher;
+
     private ContainerService containerService;
     private Container testContainer;
 
     @BeforeEach
     void setUp() {
-        containerService = new ContainerService(containerRepository, timelineService, validationService);
+        containerService = new ContainerService(containerRepository, timelineService, validationService, eventPublisher);
 
         testContainer = new Container("my-app", "Production app container", ContainerType.SOFTWARE_PROJECT);
         testContainer.setId(UUID.randomUUID());

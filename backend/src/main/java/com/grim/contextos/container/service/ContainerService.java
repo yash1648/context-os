@@ -12,6 +12,8 @@ import com.grim.contextos.container.repository.ContainerRepository;
 import com.grim.contextos.container.validation.ContainerValidationService;
 import com.grim.contextos.timeline.model.TimelineEventType;
 import com.grim.contextos.timeline.service.TimelineService;
+import com.grim.contextos.websocket.event.DomainEvent;
+import com.grim.contextos.websocket.event.DomainEventPublisher;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -27,12 +29,15 @@ public class ContainerService {
     private final ContainerRepository containerRepository;
     private final TimelineService timelineService;
     private final ContainerValidationService validationService;
+    private final DomainEventPublisher eventPublisher;
 
     public ContainerService(ContainerRepository containerRepository, TimelineService timelineService,
-                            ContainerValidationService validationService) {
+                            ContainerValidationService validationService,
+                            DomainEventPublisher eventPublisher) {
         this.containerRepository = containerRepository;
         this.timelineService = timelineService;
         this.validationService = validationService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -52,6 +57,8 @@ public class ContainerService {
         container = containerRepository.save(container);
         timelineService.recordEvent(container.getId(), TimelineEventType.CREATED,
             "Container '" + container.getName() + "' created");
+        eventPublisher.publish(new DomainEvent("CONTAINER", "CREATED", container.getId(),
+            "Container '" + container.getName() + "' created", null));
         return ContainerResponse.from(container);
     }
 
@@ -82,6 +89,8 @@ public class ContainerService {
         containerRepository.deleteById(id);
         timelineService.recordEvent(id, TimelineEventType.DELETED,
             "Container '" + name + "' deleted");
+        eventPublisher.publish(new DomainEvent("CONTAINER", "DELETED", id,
+            "Container '" + name + "' deleted", null));
     }
 
     @Transactional
@@ -101,6 +110,8 @@ public class ContainerService {
 
         container = containerRepository.save(container);
         timelineService.recordStatusChange(id, previous, newStatus);
+        eventPublisher.publish(new DomainEvent("CONTAINER", "STATUS_CHANGED", id,
+            "Status changed from " + previous + " to " + newStatus, null));
         return ContainerResponse.from(container);
     }
 
@@ -151,6 +162,8 @@ public class ContainerService {
         container = containerRepository.save(container);
         timelineService.recordEvent(id, TimelineEventType.PINNED,
             "Container '" + container.getName() + "' pinned");
+        eventPublisher.publish(new DomainEvent("CONTAINER", "PINNED", id,
+            "Container '" + container.getName() + "' pinned", null));
         return ContainerResponse.from(container);
     }
 
@@ -163,6 +176,8 @@ public class ContainerService {
         container = containerRepository.save(container);
         timelineService.recordEvent(id, TimelineEventType.UNPINNED,
             "Container '" + container.getName() + "' unpinned");
+        eventPublisher.publish(new DomainEvent("CONTAINER", "UNPINNED", id,
+            "Container '" + container.getName() + "' unpinned", null));
         return ContainerResponse.from(container);
     }
 

@@ -11,6 +11,7 @@ import com.grim.contextos.snapshot.model.Snapshot;
 import com.grim.contextos.snapshot.repository.SnapshotRepository;
 import com.grim.contextos.snapshot.service.SnapshotService;
 import com.grim.contextos.timeline.service.TimelineService;
+import com.grim.contextos.websocket.event.DomainEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,6 +38,9 @@ class SnapshotServiceTest {
     @Mock
     private TimelineService timelineService;
 
+    @Mock
+    private DomainEventPublisher eventPublisher;
+
     private SnapshotService snapshotService;
     private final UUID containerId = UUID.randomUUID();
     private final UUID snapshotId = UUID.randomUUID();
@@ -45,7 +49,7 @@ class SnapshotServiceTest {
 
     @BeforeEach
     void setUp() {
-        snapshotService = new SnapshotService(snapshotRepository, containerRepository, timelineService);
+        snapshotService = new SnapshotService(snapshotRepository, containerRepository, timelineService, eventPublisher);
 
         testContainer = new Container("my-container", "A test container", ContainerType.BOOK);
         testContainer.setId(containerId);

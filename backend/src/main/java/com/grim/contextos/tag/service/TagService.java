@@ -10,6 +10,8 @@ import com.grim.contextos.tag.model.Tag;
 import com.grim.contextos.tag.repository.TagRepository;
 import com.grim.contextos.timeline.model.TimelineEventType;
 import com.grim.contextos.timeline.service.TimelineService;
+import com.grim.contextos.websocket.event.DomainEvent;
+import com.grim.contextos.websocket.event.DomainEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,12 +26,14 @@ public class TagService {
     private final TagRepository tagRepository;
     private final ContainerRepository containerRepository;
     private final TimelineService timelineService;
+    private final DomainEventPublisher eventPublisher;
 
     public TagService(TagRepository tagRepository, ContainerRepository containerRepository,
-                      TimelineService timelineService) {
+                      TimelineService timelineService, DomainEventPublisher eventPublisher) {
         this.tagRepository = tagRepository;
         this.containerRepository = containerRepository;
         this.timelineService = timelineService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -39,6 +43,8 @@ public class TagService {
         }
         Tag tag = new Tag(request.name(), request.color(), ownerId);
         tag = tagRepository.save(tag);
+        eventPublisher.publish(new DomainEvent("TAG", "CREATED", tag.getId(),
+            "Tag '" + tag.getName() + "' created", null));
         return TagResponse.from(tag);
     }
 
@@ -65,15 +71,19 @@ public class TagService {
             tag.setColor(request.color());
         }
         tag = tagRepository.save(tag);
+        eventPublisher.publish(new DomainEvent("TAG", "UPDATED", id,
+            "Tag '" + tag.getName() + "' updated", null));
         return TagResponse.from(tag);
     }
 
     @Transactional
     public void deleteTag(UUID id) {
-        if (!tagRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Tag", id);
-        }
+        Tag tag = tagRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Tag", id));
+        String name = tag.getName();
         tagRepository.deleteById(id);
+        eventPublisher.publish(new DomainEvent("TAG", "DELETED", id,
+            "Tag '" + name + "' deleted", null));
     }
 
     @Transactional
@@ -89,6 +99,8 @@ public class TagService {
         String tagNames = tags.stream().map(Tag::getName).collect(Collectors.joining(", "));
         timelineService.recordEvent(containerId, TimelineEventType.TAG_ASSIGNED,
             "Tags assigned: " + tagNames);
+        eventPublisher.publish(new DomainEvent("CONTAINER", "TAG_ASSIGNED", containerId,
+            "Tags assigned: " + tagNames, null));
     }
 
     @Transactional(readOnly = true)
@@ -132,6 +144,8 @@ public class TagService {
         }
 
         tagRepository.delete(source);
+        eventPublisher.publish(new DomainEvent("TAG", "MERGED", targetTagId,
+            "Tag \"" + sourceName + "\" merged into \"" + targetName + "\"", null));
         return TagResponse.from(target);
     }
 
@@ -146,5 +160,7 @@ public class TagService {
         containerRepository.save(container);
         timelineService.recordEvent(containerId, TimelineEventType.TAG_REMOVED,
             "Tag removed: " + tagName);
+        eventPublisher.publish(new DomainEvent("CONTAINER", "TAG_REMOVED", containerId,
+            "Tag removed: " + tagName, null));
     }
 }

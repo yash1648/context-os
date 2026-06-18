@@ -13,6 +13,7 @@ import com.grim.contextos.container.service.ContainerService;
 import com.grim.contextos.container.validation.ContainerValidationService;
 import com.grim.contextos.timeline.model.TimelineEventType;
 import com.grim.contextos.timeline.service.TimelineService;
+import com.grim.contextos.websocket.event.DomainEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,13 +42,16 @@ class ContainerServiceTest {
     @Mock
     private ContainerValidationService validationService;
 
+    @Mock
+    private DomainEventPublisher eventPublisher;
+
     private ContainerService containerService;
     private final UUID containerId = UUID.randomUUID();
     private Container testContainer;
 
     @BeforeEach
     void setUp() {
-        containerService = new ContainerService(containerRepository, timelineService, validationService);
+        containerService = new ContainerService(containerRepository, timelineService, validationService, eventPublisher);
         lenient().when(validationService.validate(any(), any())).thenReturn(List.of());
 
         testContainer = new Container("test-container", "A test container", ContainerType.BOOK);
