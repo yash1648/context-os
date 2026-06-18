@@ -19,6 +19,7 @@ import java.util.UUID;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest(properties = {
@@ -89,6 +90,53 @@ class UserControllerTest {
     void getMeRequiresAuthentication() throws Exception {
         mockMvc.perform(get("/api/v1/users/me")
                 .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void updateProfileUpdatesDisplayName() throws Exception {
+        mockMvc.perform(put("/api/v1/users/me")
+                .with(user(principal))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"displayName":"New Name"}
+                    """))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.displayName").value("New Name"))
+            .andExpect(jsonPath("$.data.email").value("profile@test.com"));
+    }
+
+    @Test
+    void updateProfileUpdatesAvatarUrl() throws Exception {
+        mockMvc.perform(put("/api/v1/users/me")
+                .with(user(principal))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"avatarUrl":"https://example.com/avatar.png"}
+                    """))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.avatarUrl").value("https://example.com/avatar.png"));
+    }
+
+    @Test
+    void updateProfilePartialUpdatePreservesOtherFields() throws Exception {
+        mockMvc.perform(put("/api/v1/users/me")
+                .with(user(principal))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"displayName":"Only Name"}
+                    """))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.displayName").value("Only Name"))
+            .andExpect(jsonPath("$.data.email").value("profile@test.com"));
+    }
+
+    @Test
+    void updateProfileRequiresAuthentication() throws Exception {
+        mockMvc.perform(put("/api/v1/users/me")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"displayName\":\"test\"}"))
             .andExpect(status().isForbidden());
     }
 }

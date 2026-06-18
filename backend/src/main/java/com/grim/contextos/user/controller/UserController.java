@@ -2,8 +2,10 @@ package com.grim.contextos.user.controller;
 
 import com.grim.contextos.auth.model.UserPrincipal;
 import com.grim.contextos.common.response.ApiResponse;
+import com.grim.contextos.user.dto.UpdateUserRequest;
 import com.grim.contextos.user.model.User;
 import com.grim.contextos.user.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -30,6 +32,14 @@ public class UserController {
             "avatarUrl", user.getAvatarUrl() != null ? user.getAvatarUrl() : "",
             "role", user.getRole().name()
         );
+        return ResponseEntity.ok(ApiResponse.ok(profile));
+    }
+
+    @PutMapping("/me")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> updateProfile(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody UpdateUserRequest request) {
+        Map<String, Object> profile = userService.updateProfile(principal.id(), request);
         return ResponseEntity.ok(ApiResponse.ok(profile));
     }
 }
