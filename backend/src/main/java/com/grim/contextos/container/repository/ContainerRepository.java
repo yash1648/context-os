@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface ContainerRepository extends JpaRepository<Container, UUID>, JpaSpecificationExecutor<Container> {
@@ -20,4 +21,11 @@ public interface ContainerRepository extends JpaRepository<Container, UUID>, Jpa
     long countByStatus(ContainerStatus status);
 
     List<Container> findByPinnedTrueOrderByPinnedAtDesc();
+
+    // Bypass @SQLRestriction for admin operations
+    @Query("SELECT c FROM Container c WHERE c.id = :id AND c.deletedAt IS NOT NULL")
+    Optional<Container> findDeletedById(UUID id);
+
+    @Query("SELECT c FROM Container c WHERE c.deletedAt IS NOT NULL")
+    List<Container> findAllDeleted();
 }

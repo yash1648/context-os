@@ -88,6 +88,18 @@ public class ContainerController {
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
 
+    @PostMapping("/{id}/restore")
+    public ResponseEntity<ApiResponse<ContainerResponse>> restoreContainer(@PathVariable UUID id) {
+        ContainerResponse response = containerService.restoreContainer(id);
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @DeleteMapping("/{id}/hard")
+    public ResponseEntity<ApiResponse<Void>> hardDeleteContainer(@PathVariable UUID id) {
+        containerService.hardDeleteContainer(id);
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
     @PatchMapping("/{id}/status")
     public ResponseEntity<ApiResponse<ContainerResponse>> updateStatus(
             @PathVariable UUID id,

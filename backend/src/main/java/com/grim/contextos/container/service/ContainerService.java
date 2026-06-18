@@ -17,9 +17,11 @@ import com.grim.contextos.websocket.event.DomainEvent;
 import com.grim.contextos.websocket.event.DomainEventPublisher;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -126,11 +128,36 @@ public class ContainerService {
         Container container = containerRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Container", id));
         String name = container.getName();
-        containerRepository.deleteById(id);
+        container.setDeletedAt(LocalDateTime.now());
+        containerRepository.save(container);
         timelineService.recordEvent(id, TimelineEventType.DELETED,
             "Container '" + name + "' deleted");
         eventPublisher.publish(new DomainEvent("CONTAINER", "DELETED", id,
             "Container '" + name + "' deleted", null));
+    }
+
+    @Transactional
+    public ContainerResponse restoreContainer(UUID id) {
+        Container container = containerRepository.findDeletedById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Container", id));
+        container.setDeletedAt(null);
+        container = containerRepository.save(container);
+        timelineService.recordEvent(id, TimelineEventType.UPDATED,
+            "Container '" + container.getName() + "' restored");
+        eventPublisher.publish(new DomainEvent("CONTAINER", "UPDATED", id,
+            "Container '" + container.getName() + "' restored", null));
+        return ContainerResponse.from(container);
+    }
+
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
+    public void hardDeleteContainer(UUID id) {
+        Container container = containerRepository.findDeletedById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Container", id));
+        String name = container.getName();
+        containerRepository.delete(container);
+        eventPublisher.publish(new DomainEvent("CONTAINER", "HARD_DELETED", id,
+            "Container '" + name + "' permanently deleted", null));
     }
 
     @Transactional

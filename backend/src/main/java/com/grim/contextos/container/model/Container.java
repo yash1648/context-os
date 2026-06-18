@@ -9,10 +9,12 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "containers")
+@SQLRestriction("deleted_at IS NULL")
 public class Container extends BaseEntity {
 
     @Column(nullable = false, length = 255)
@@ -60,6 +62,8 @@ public class Container extends BaseEntity {
     private boolean pinned = false;
 
     private LocalDateTime pinnedAt;
+
+    private LocalDateTime deletedAt;
 
     public Container() {}
 
@@ -111,4 +115,7 @@ public class Container extends BaseEntity {
 
     public LocalDateTime getPinnedAt() { return pinnedAt; }
     public void setPinnedAt(LocalDateTime pinnedAt) { this.pinnedAt = pinnedAt; }
+
+    public LocalDateTime getDeletedAt() { return deletedAt; }
+    public void setDeletedAt(LocalDateTime deletedAt) { this.deletedAt = deletedAt; }
 }

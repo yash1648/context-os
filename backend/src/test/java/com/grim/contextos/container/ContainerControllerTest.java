@@ -23,6 +23,7 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -216,6 +217,27 @@ class ContainerControllerTest {
                 .content("""
                     {"name":"new-name"}
                     """))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    void restoreContainerReturns200() throws Exception {
+        when(containerService.restoreContainer(containerId)).thenReturn(response);
+
+        mockMvc.perform(post("/api/v1/containers/{id}/restore", containerId)
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.id").value(containerId.toString()));
+    }
+
+    @Test
+    void hardDeleteContainerReturns200() throws Exception {
+        doNothing().when(containerService).hardDeleteContainer(containerId);
+
+        mockMvc.perform(delete("/api/v1/containers/{id}/hard", containerId)
+                .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.success").value(true));
     }

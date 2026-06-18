@@ -156,12 +156,14 @@ class ContainerServiceTest {
     }
 
     @Test
-    void deleteContainerDeletesWhenExists() {
+    void deleteContainerSetsDeletedAt() {
         when(containerRepository.findById(containerId)).thenReturn(Optional.of(testContainer));
+        when(containerRepository.save(any(Container.class))).thenReturn(testContainer);
 
         containerService.deleteContainer(containerId);
 
-        verify(containerRepository).deleteById(containerId);
+        verify(containerRepository).save(testContainer);
+        assertNotNull(testContainer.getDeletedAt());
     }
 
     @Test
@@ -169,7 +171,7 @@ class ContainerServiceTest {
         when(containerRepository.findById(containerId)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> containerService.deleteContainer(containerId));
-        verify(containerRepository, never()).deleteById(any());
+        verify(containerRepository, never()).save(any());
     }
 
     @Test
