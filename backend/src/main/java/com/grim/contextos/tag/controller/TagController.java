@@ -8,6 +8,8 @@ import com.grim.contextos.tag.dto.request.UpdateTagRequest;
 import com.grim.contextos.tag.dto.response.TagResponse;
 import com.grim.contextos.tag.service.TagService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -90,7 +92,7 @@ public class TagController {
     @PostMapping("/assign")
     public ResponseEntity<ApiResponse<Void>> assignTagsToContainer(
             @RequestParam UUID containerId,
-            @RequestBody Set<UUID> tagIds) {
+            @Valid @NotEmpty @RequestBody Set<@NotNull UUID> tagIds) {
         tagService.assignTagsToContainer(containerId, tagIds);
         return ResponseEntity.ok(ApiResponse.ok(null));
     }

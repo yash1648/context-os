@@ -11,6 +11,7 @@ import com.grim.contextos.container.model.ContainerStatus;
 import com.grim.contextos.container.model.ContainerType;
 import com.grim.contextos.container.service.ContainerService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -112,10 +113,10 @@ public class ContainerController {
     @PatchMapping("/{id}/status")
     public ResponseEntity<ApiResponse<ContainerResponse>> updateStatus(
             @PathVariable UUID id,
-            @RequestBody StatusUpdateRequest request) {
+            @Valid @RequestBody StatusUpdateRequest request) {
         ContainerResponse response = containerService.transitionStatus(id, request.status());
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
-    public record StatusUpdateRequest(ContainerStatus status) {}
+    public record StatusUpdateRequest(@NotNull ContainerStatus status) {}
 }

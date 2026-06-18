@@ -46,7 +46,7 @@ class ContainerControllerTest {
     private final UUID containerId = UUID.randomUUID();
     private final ContainerResponse response = new ContainerResponse(
         containerId, "test-ctr", "desc", ContainerType.BOOK, null, ContainerStatus.PENDING,
-        null, null, null, null,
+        null, null, null, List.of(), null,
         null, null, LocalDateTime.now(), LocalDateTime.now(),
         false, null, null
     );
@@ -133,7 +133,7 @@ class ContainerControllerTest {
     void updateStatusReturns200() throws Exception {
         var runningResponse = new ContainerResponse(
             containerId, "test-ctr", "desc", ContainerType.BOOK, null, ContainerStatus.RUNNING,
-            null, null, null, null,
+            null, null, null, List.of(), null,
             LocalDateTime.now(), null, LocalDateTime.now(), LocalDateTime.now(),
             false, null, null
         );
@@ -164,7 +164,7 @@ class ContainerControllerTest {
     void pinContainerReturns200() throws Exception {
         var pinnedResponse = new ContainerResponse(
             containerId, "test-ctr", "desc", ContainerType.BOOK, null, ContainerStatus.PENDING,
-            null, null, null, null,
+            null, null, null, List.of(), null,
             null, null, LocalDateTime.now(), LocalDateTime.now(),
             true, LocalDateTime.now(), null);
         when(containerService.pinContainer(containerId)).thenReturn(pinnedResponse);
@@ -189,7 +189,7 @@ class ContainerControllerTest {
     void updateContainerReturns200() throws Exception {
         var updated = new ContainerResponse(
             containerId, "new-name", "new-desc", ContainerType.BOOK, null, ContainerStatus.PENDING,
-            null, null, null, null,
+            null, null, null, List.of(), null,
             null, null, LocalDateTime.now(), LocalDateTime.now(),
             false, null, null
         );
@@ -225,7 +225,7 @@ class ContainerControllerTest {
     void updateProgressReturns200() throws Exception {
         var progressResponse = new ContainerResponse(
             containerId, "test-ctr", "desc", ContainerType.BOOK, null, ContainerStatus.PENDING,
-            null, null, null, null,
+            null, null, null, List.of(), null,
             null, null, LocalDateTime.now(), LocalDateTime.now(),
             false, null, 75
         );

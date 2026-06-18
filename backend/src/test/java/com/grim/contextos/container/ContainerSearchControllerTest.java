@@ -40,7 +40,7 @@ class ContainerSearchControllerTest {
 
     private final ContainerResponse containerResponse = new ContainerResponse(
         UUID.randomUUID(), "my-app", "desc", ContainerType.SOFTWARE_PROJECT,
-        null, ContainerStatus.RUNNING, null, null, null, null,
+        null, ContainerStatus.RUNNING, null, null, null, List.of(), null,
         null, null, LocalDateTime.now(), LocalDateTime.now(),
         false, null, null);
 
@@ -118,7 +118,7 @@ class ContainerSearchControllerTest {
     void searchWithoutParamsReturnsAll() throws Exception {
         ContainerResponse c2 = new ContainerResponse(
             UUID.randomUUID(), "other", null, ContainerType.MOVIE,
-            null, ContainerStatus.PENDING, null, null, null, null,
+            null, ContainerStatus.PENDING, null, null, null, List.of(), null,
             null, null, LocalDateTime.now(), LocalDateTime.now(),
             false, null, null);
 

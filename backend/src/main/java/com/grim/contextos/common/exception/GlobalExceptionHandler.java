@@ -1,14 +1,18 @@
 package com.grim.contextos.common.exception;
 
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import jakarta.validation.ConstraintViolationException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -66,6 +70,30 @@ public class GlobalExceptionHandler {
         }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(errorBody("BAD_REQUEST", msg != null ? msg : "No message"));
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String,Object>> handleHttpMessageNotReadable(HttpMessageNotReadableException ex){
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(errorBody("MALFORMED_BODY", "Request body is malformed or contains invalid values"));
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<Map<String,Object>> handleMissingParam(MissingServletRequestParameterException ex){
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(errorBody("MISSING_PARAM", ex.getMessage()));
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String,Object>> handleDataIntegrity(DataIntegrityViolationException ex){
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(errorBody("DUPLICATE_KEY", "A record with that key already exists"));
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<Map<String,Object>> handleConstraintViolation(ConstraintViolationException ex){
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(errorBody("CONSTRAINT_VIOLATION", ex.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
