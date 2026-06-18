@@ -4,6 +4,7 @@ import com.grim.contextos.auth.security.CustomUserDetailsService;
 import com.grim.contextos.auth.security.JwtTokenProvider;
 import com.grim.contextos.container.controller.ContainerController;
 import com.grim.contextos.container.dto.request.CreateContainerRequest;
+import com.grim.contextos.container.dto.request.UpdateContainerRequest;
 import com.grim.contextos.container.dto.response.ContainerListResponse;
 import com.grim.contextos.container.dto.response.ContainerResponse;
 import com.grim.contextos.container.model.ContainerStatus;
@@ -21,6 +22,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -180,5 +182,41 @@ class ContainerControllerTest {
                 .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.data.pinned").value(false));
+    }
+
+    @Test
+    void updateContainerReturns200() throws Exception {
+        var updated = new ContainerResponse(
+            containerId, "new-name", "new-desc", ContainerType.BOOK, null, ContainerStatus.PENDING,
+            null, null, null, null,
+            null, null, LocalDateTime.now(), LocalDateTime.now(),
+            false, null
+        );
+        when(containerService.updateContainer(eq(containerId), any(UpdateContainerRequest.class)))
+            .thenReturn(updated);
+
+        mockMvc.perform(put("/api/v1/containers/{id}", containerId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"name":"new-name","description":"new-desc"}
+                    """))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.name").value("new-name"))
+            .andExpect(jsonPath("$.data.description").value("new-desc"));
+    }
+
+    @Test
+    void updateContainerAcceptsPartialUpdate() throws Exception {
+        when(containerService.updateContainer(eq(containerId), any(UpdateContainerRequest.class)))
+            .thenReturn(response);
+
+        mockMvc.perform(put("/api/v1/containers/{id}", containerId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"name":"new-name"}
+                    """))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.success").value(true));
     }
 }

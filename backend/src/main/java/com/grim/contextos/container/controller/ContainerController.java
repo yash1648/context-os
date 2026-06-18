@@ -2,6 +2,7 @@ package com.grim.contextos.container.controller;
 
 import com.grim.contextos.common.response.ApiResponse;
 import com.grim.contextos.container.dto.request.CreateContainerRequest;
+import com.grim.contextos.container.dto.request.UpdateContainerRequest;
 import com.grim.contextos.container.dto.response.ContainerListResponse;
 import com.grim.contextos.container.dto.response.ContainerResponse;
 import com.grim.contextos.container.dto.search.ContainerSearchCriteria;
@@ -30,6 +31,14 @@ public class ContainerController {
     public ResponseEntity<ApiResponse<ContainerResponse>> createContainer(@Valid @RequestBody CreateContainerRequest request) {
         ContainerResponse response = containerService.createContainer(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(response));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<ContainerResponse>> updateContainer(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateContainerRequest request) {
+        ContainerResponse response = containerService.updateContainer(id, request);
+        return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
     @GetMapping

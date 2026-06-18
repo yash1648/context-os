@@ -3,6 +3,7 @@ package com.grim.contextos.container;
 import com.grim.contextos.common.exception.ResourceNotFoundException;
 import com.grim.contextos.common.exception.ValidationException;
 import com.grim.contextos.container.dto.request.CreateContainerRequest;
+import com.grim.contextos.container.dto.request.UpdateContainerRequest;
 import com.grim.contextos.container.dto.response.ContainerListResponse;
 import com.grim.contextos.container.dto.response.ContainerResponse;
 import com.grim.contextos.container.model.Container;
@@ -262,5 +263,52 @@ class ContainerServiceTest {
 
         assertEquals(1, results.size());
         assertTrue(results.getFirst().pinned());
+    }
+
+    @Test
+    void updateContainerUpdatesFields() {
+        var request = new UpdateContainerRequest("new-name", "new-desc", "{}", "env", "limits", "labels");
+        when(containerRepository.findById(containerId)).thenReturn(Optional.of(testContainer));
+        when(validationService.validate("{}", ContainerType.BOOK)).thenReturn(List.of());
+        when(containerRepository.save(any(Container.class))).thenReturn(testContainer);
+
+        ContainerResponse response = containerService.updateContainer(containerId, request);
+
+        assertEquals("new-name", response.name());
+        assertEquals("new-desc", response.description());
+        verify(timelineService).recordEvent(eq(containerId), eq(TimelineEventType.UPDATED), any());
+    }
+
+    @Test
+    void updateContainerUpdatesOnlyNonNullFields() {
+        var request = new UpdateContainerRequest(null, null, null, null, null, "new-labels");
+        when(containerRepository.findById(containerId)).thenReturn(Optional.of(testContainer));
+        when(containerRepository.save(any(Container.class))).thenReturn(testContainer);
+
+        ContainerResponse response = containerService.updateContainer(containerId, request);
+
+        assertEquals("test-container", response.name()); // unchanged
+        assertEquals("new-labels", testContainer.getLabels());
+    }
+
+    @Test
+    void updateContainerThrowsWhenNotFound() {
+        var request = new UpdateContainerRequest("name", null, null, null, null, null);
+        when(containerRepository.findById(containerId)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class,
+            () -> containerService.updateContainer(containerId, request));
+    }
+
+    @Test
+    void updateContainerValidatesMetadataWhenChanged() {
+        var request = new UpdateContainerRequest(null, null, "invalid-metadata", null, null, null);
+        when(containerRepository.findById(containerId)).thenReturn(Optional.of(testContainer));
+        when(validationService.validate("invalid-metadata", ContainerType.BOOK))
+            .thenReturn(List.of("Invalid ISBN format"));
+
+        assertThrows(ValidationException.class,
+            () -> containerService.updateContainer(containerId, request));
+        verify(containerRepository, never()).save(any());
     }
 }

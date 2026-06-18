@@ -3,6 +3,7 @@ package com.grim.contextos.container.service;
 import com.grim.contextos.common.exception.ResourceNotFoundException;
 import com.grim.contextos.common.exception.ValidationException;
 import com.grim.contextos.container.dto.request.CreateContainerRequest;
+import com.grim.contextos.container.dto.request.UpdateContainerRequest;
 import com.grim.contextos.container.dto.response.ContainerListResponse;
 import com.grim.contextos.container.dto.response.ContainerResponse;
 import com.grim.contextos.container.dto.search.ContainerSearchCriteria;
@@ -65,6 +66,45 @@ public class ContainerService {
     public ContainerResponse getContainer(UUID id) {
         Container container = containerRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Container", id));
+        return ContainerResponse.from(container);
+    }
+
+    @Transactional
+    public ContainerResponse updateContainer(UUID id, UpdateContainerRequest request) {
+        Container container = containerRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Container", id));
+
+        if (request.name() != null) {
+            container.setName(request.name());
+        }
+        if (request.description() != null) {
+            container.setDescription(request.description());
+        }
+        if (request.metadata() != null) {
+            List<String> validationErrors = validationService.validate(request.metadata(), container.getType());
+            if (!validationErrors.isEmpty()) {
+                throw new ValidationException("Container validation failed",
+                    validationErrors.stream()
+                        .map(msg -> new ValidationException.FieldError("metadata", msg))
+                        .toList());
+            }
+            container.setMetadata(request.metadata());
+        }
+        if (request.envVars() != null) {
+            container.setEnvVars(request.envVars());
+        }
+        if (request.resourceLimits() != null) {
+            container.setResourceLimits(request.resourceLimits());
+        }
+        if (request.labels() != null) {
+            container.setLabels(request.labels());
+        }
+
+        container = containerRepository.save(container);
+        timelineService.recordEvent(id, TimelineEventType.UPDATED,
+            "Container '" + container.getName() + "' updated");
+        eventPublisher.publish(new DomainEvent("CONTAINER", "UPDATED", id,
+            "Container '" + container.getName() + "' updated", null));
         return ContainerResponse.from(container);
     }
 
