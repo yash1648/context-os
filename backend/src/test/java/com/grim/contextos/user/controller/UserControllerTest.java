@@ -12,6 +12,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.UUID;
@@ -30,6 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
     "jwt.secret=test-secret-key-that-is-long-enough-for-hmac-sha-512-algorithm"
 })
 @AutoConfigureMockMvc
+@ActiveProfiles("test")
 class UserControllerTest {
 
     @Autowired
