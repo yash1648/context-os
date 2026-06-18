@@ -3,6 +3,7 @@ package com.grim.contextos.tag.controller;
 import com.grim.contextos.auth.model.UserPrincipal;
 import com.grim.contextos.common.response.ApiResponse;
 import com.grim.contextos.tag.dto.request.CreateTagRequest;
+import com.grim.contextos.tag.dto.request.MergeTagsRequest;
 import com.grim.contextos.tag.dto.request.UpdateTagRequest;
 import com.grim.contextos.tag.dto.response.TagResponse;
 import com.grim.contextos.tag.service.TagService;
@@ -75,6 +76,15 @@ public class TagController {
     public ResponseEntity<ApiResponse<Void>> deleteTag(@PathVariable UUID id) {
         tagService.deleteTag(id);
         return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    @PostMapping("/merge")
+    public ResponseEntity<ApiResponse<TagResponse>> mergeTags(
+            @Valid @RequestBody MergeTagsRequest request,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        TagResponse response = tagService.mergeTags(
+            request.sourceTagId(), request.targetTagId(), principal.id());
+        return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
     @PostMapping("/assign")

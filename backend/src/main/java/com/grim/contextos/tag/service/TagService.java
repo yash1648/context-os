@@ -106,6 +106,36 @@ public class TagService {
     }
 
     @Transactional
+    public TagResponse mergeTags(UUID sourceTagId, UUID targetTagId, UUID ownerId) {
+        Tag source = tagRepository.findById(sourceTagId)
+            .orElseThrow(() -> new ResourceNotFoundException("Tag", sourceTagId));
+        Tag target = tagRepository.findById(targetTagId)
+            .orElseThrow(() -> new ResourceNotFoundException("Tag", targetTagId));
+
+        if (!source.getOwnerId().equals(ownerId) || !target.getOwnerId().equals(ownerId)) {
+            throw new IllegalArgumentException("Tags must belong to the current user");
+        }
+        if (sourceTagId.equals(targetTagId)) {
+            throw new IllegalArgumentException("Cannot merge a tag with itself");
+        }
+
+        List<Container> affectedContainers = containerRepository.findByTagsId(sourceTagId);
+        String targetName = target.getName();
+        String sourceName = source.getName();
+
+        for (Container container : affectedContainers) {
+            container.getTags().remove(source);
+            container.getTags().add(target);
+            containerRepository.save(container);
+            timelineService.recordEvent(container.getId(), TimelineEventType.TAG_ASSIGNED,
+                "Tag \"" + targetName + "\" assigned via merge from \"" + sourceName + "\"");
+        }
+
+        tagRepository.delete(source);
+        return TagResponse.from(target);
+    }
+
+    @Transactional
     public void removeTagFromContainer(UUID containerId, UUID tagId) {
         Container container = containerRepository.findById(containerId)
             .orElseThrow(() -> new ResourceNotFoundException("Container", containerId));

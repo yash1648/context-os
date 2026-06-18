@@ -168,4 +168,30 @@ class TagControllerTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.data[0].name").value("fiction"));
     }
+
+    @Test
+    void mergeTagsReturns200() throws Exception {
+        UUID sourceId = UUID.randomUUID();
+        var result = new TagResponse(sourceId, "fiction", "#ff0000", ownerId);
+        when(tagService.mergeTags(any(), any(), any())).thenReturn(result);
+
+        mockMvc.perform(post("/api/v1/tags/merge")
+                .with(user(principal))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"sourceTagId":"%s","targetTagId":"%s"}
+                    """.formatted(sourceId, tagId)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.id").value(sourceId.toString()));
+    }
+
+    @Test
+    void mergeTagsReturns400WhenBodyMissing() throws Exception {
+        mockMvc.perform(post("/api/v1/tags/merge")
+                .with(user(principal))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
+            .andExpect(status().isBadRequest());
+    }
 }

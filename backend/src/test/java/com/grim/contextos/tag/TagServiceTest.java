@@ -10,6 +10,7 @@ import com.grim.contextos.tag.dto.response.TagResponse;
 import com.grim.contextos.tag.model.Tag;
 import com.grim.contextos.tag.repository.TagRepository;
 import com.grim.contextos.tag.service.TagService;
+import com.grim.contextos.timeline.model.TimelineEventType;
 import com.grim.contextos.timeline.service.TimelineService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,6 +25,8 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -222,5 +225,91 @@ class TagServiceTest {
 
         assertEquals(1, results.size());
         assertEquals("fiction", results.getFirst().name());
+    }
+
+    @Test
+    void mergeTagsMergesSourceIntoTarget() {
+        UUID targetId = UUID.randomUUID();
+        Tag targetTag = new Tag("books", "#00ff00", ownerId);
+        targetTag.setId(targetId);
+
+        UUID containerId = UUID.randomUUID();
+        Container container = new Container("test", "desc", ContainerType.BOOK);
+        container.setId(containerId);
+        container.getTags().add(testTag);
+
+        when(tagRepository.findById(tagId)).thenReturn(Optional.of(testTag));
+        when(tagRepository.findById(targetId)).thenReturn(Optional.of(targetTag));
+        when(containerRepository.findByTagsId(tagId)).thenReturn(List.of(container));
+        when(containerRepository.save(any(Container.class))).thenReturn(container);
+
+        TagResponse result = tagService.mergeTags(tagId, targetId, ownerId);
+
+        assertFalse(container.getTags().contains(testTag));
+        assertTrue(container.getTags().contains(targetTag));
+        assertEquals("books", result.name());
+        verify(tagRepository).delete(testTag);
+        verify(timelineService).recordEvent(eq(containerId), eq(TimelineEventType.TAG_ASSIGNED), anyString());
+    }
+
+    @Test
+    void mergeTagsThrowsWhenSourceNotFound() {
+        UUID targetId = UUID.randomUUID();
+        when(tagRepository.findById(tagId)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class,
+            () -> tagService.mergeTags(tagId, targetId, ownerId));
+    }
+
+    @Test
+    void mergeTagsThrowsWhenTargetNotFound() {
+        UUID targetId = UUID.randomUUID();
+        when(tagRepository.findById(tagId)).thenReturn(Optional.of(testTag));
+        when(tagRepository.findById(targetId)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class,
+            () -> tagService.mergeTags(tagId, targetId, ownerId));
+    }
+
+    @Test
+    void mergeTagsThrowsWhenWrongOwner() {
+        UUID targetId = UUID.randomUUID();
+        Tag targetTag = new Tag("books", "#00ff00", UUID.randomUUID()); // different owner
+        targetTag.setId(targetId);
+        when(tagRepository.findById(tagId)).thenReturn(Optional.of(testTag));
+        when(tagRepository.findById(targetId)).thenReturn(Optional.of(targetTag));
+
+        assertThrows(IllegalArgumentException.class,
+            () -> tagService.mergeTags(tagId, targetId, ownerId));
+    }
+
+    @Test
+    void mergeTagsThrowsWhenSameTag() {
+        when(tagRepository.findById(tagId)).thenReturn(Optional.of(testTag));
+
+        assertThrows(IllegalArgumentException.class,
+            () -> tagService.mergeTags(tagId, tagId, ownerId));
+    }
+
+    @Test
+    void mergeTagsRecordsTimelineForEachContainer() {
+        UUID targetId = UUID.randomUUID();
+        Tag targetTag = new Tag("books", "#00ff00", ownerId);
+        targetTag.setId(targetId);
+
+        Container c1 = new Container("c1", "d", ContainerType.BOOK);
+        c1.setId(UUID.randomUUID());
+        Container c2 = new Container("c2", "d", ContainerType.BOOK);
+        c2.setId(UUID.randomUUID());
+
+        when(tagRepository.findById(tagId)).thenReturn(Optional.of(testTag));
+        when(tagRepository.findById(targetId)).thenReturn(Optional.of(targetTag));
+        when(containerRepository.findByTagsId(tagId)).thenReturn(List.of(c1, c2));
+        when(containerRepository.save(any(Container.class))).thenReturn(c1, c2);
+
+        tagService.mergeTags(tagId, targetId, ownerId);
+
+        verify(timelineService, times(2)).recordEvent(any(), eq(TimelineEventType.TAG_ASSIGNED), anyString());
+        verify(tagRepository).delete(testTag);
     }
 }
