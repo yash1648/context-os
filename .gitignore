@@ -8,3 +8,8 @@ frontend/dist/
 .DS_Store
 .tmp/
 backend/.env
+api-docs.json
+contextos-design.md
+contextos-frontend-guide.md
+lovable-prompt.md
+frontend/

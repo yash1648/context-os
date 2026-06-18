@@ -23,6 +23,7 @@ spring:
 
   flyway:
     enabled: true
+    baseline-on-migrate: true   # safe for dev: baselines existing schemas
 
 server:
   port: ${APP_PORT:6969}
