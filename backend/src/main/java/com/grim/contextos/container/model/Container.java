@@ -1,9 +1,12 @@
 package com.grim.contextos.container.model;
 
 import com.grim.contextos.common.audit.BaseEntity;
+import com.grim.contextos.tag.model.Tag;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
@@ -38,6 +41,14 @@ public class Container extends BaseEntity {
 
     @Column(columnDefinition = "TEXT")
     private String labels;
+
+    @ManyToMany
+    @JoinTable(
+        name = "container_tags",
+        joinColumns = @JoinColumn(name = "container_id"),
+        inverseJoinColumns = @JoinColumn(name = "tag_id")
+    )
+    private Set<Tag> tags = new HashSet<>();
 
     @Column(length = 1000)
     private String errorMessage;
@@ -77,6 +88,9 @@ public class Container extends BaseEntity {
 
     public String getLabels() { return labels; }
     public void setLabels(String labels) { this.labels = labels; }
+
+    public Set<Tag> getTags() { return tags; }
+    public void setTags(Set<Tag> tags) { this.tags = tags; }
 
     public String getErrorMessage() { return errorMessage; }
     public void setErrorMessage(String errorMessage) { this.errorMessage = errorMessage; }
