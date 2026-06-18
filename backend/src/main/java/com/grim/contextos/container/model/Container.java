@@ -65,6 +65,8 @@ public class Container extends BaseEntity {
 
     private LocalDateTime deletedAt;
 
+    private Integer progress;
+
     public Container() {}
 
     public Container(String name, String description, ContainerType type) {
@@ -118,4 +120,7 @@ public class Container extends BaseEntity {
 
     public LocalDateTime getDeletedAt() { return deletedAt; }
     public void setDeletedAt(LocalDateTime deletedAt) { this.deletedAt = deletedAt; }
+
+    public Integer getProgress() { return progress; }
+    public void setProgress(Integer progress) { this.progress = progress; }
 }

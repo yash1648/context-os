@@ -48,7 +48,7 @@ class ContainerControllerTest {
         containerId, "test-ctr", "desc", ContainerType.BOOK, null, ContainerStatus.PENDING,
         null, null, null, null,
         null, null, LocalDateTime.now(), LocalDateTime.now(),
-        false, null
+        false, null, null
     );
 
     @Test
@@ -135,7 +135,7 @@ class ContainerControllerTest {
             containerId, "test-ctr", "desc", ContainerType.BOOK, null, ContainerStatus.RUNNING,
             null, null, null, null,
             LocalDateTime.now(), null, LocalDateTime.now(), LocalDateTime.now(),
-            false, null
+            false, null, null
         );
         when(containerService.transitionStatus(containerId, ContainerStatus.RUNNING)).thenReturn(runningResponse);
 
@@ -166,7 +166,7 @@ class ContainerControllerTest {
             containerId, "test-ctr", "desc", ContainerType.BOOK, null, ContainerStatus.PENDING,
             null, null, null, null,
             null, null, LocalDateTime.now(), LocalDateTime.now(),
-            true, LocalDateTime.now());
+            true, LocalDateTime.now(), null);
         when(containerService.pinContainer(containerId)).thenReturn(pinnedResponse);
 
         mockMvc.perform(post("/api/v1/containers/{id}/pin", containerId)
@@ -191,7 +191,7 @@ class ContainerControllerTest {
             containerId, "new-name", "new-desc", ContainerType.BOOK, null, ContainerStatus.PENDING,
             null, null, null, null,
             null, null, LocalDateTime.now(), LocalDateTime.now(),
-            false, null
+            false, null, null
         );
         when(containerService.updateContainer(eq(containerId), any(UpdateContainerRequest.class)))
             .thenReturn(updated);
@@ -219,6 +219,45 @@ class ContainerControllerTest {
                     """))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    void updateProgressReturns200() throws Exception {
+        var progressResponse = new ContainerResponse(
+            containerId, "test-ctr", "desc", ContainerType.BOOK, null, ContainerStatus.PENDING,
+            null, null, null, null,
+            null, null, LocalDateTime.now(), LocalDateTime.now(),
+            false, null, 75
+        );
+        when(containerService.updateProgress(containerId, 75)).thenReturn(progressResponse);
+
+        mockMvc.perform(patch("/api/v1/containers/{id}/progress", containerId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"progress":75}
+                    """))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.progress").value(75));
+    }
+
+    @Test
+    void updateProgressReturns400WhenOver100() throws Exception {
+        mockMvc.perform(patch("/api/v1/containers/{id}/progress", containerId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"progress":150}
+                    """))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void updateProgressReturns400WhenNegative() throws Exception {
+        mockMvc.perform(patch("/api/v1/containers/{id}/progress", containerId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"progress":-1}
+                    """))
+            .andExpect(status().isBadRequest());
     }
 
     @Test

@@ -2,6 +2,7 @@ package com.grim.contextos.container.controller;
 
 import com.grim.contextos.common.response.ApiResponse;
 import com.grim.contextos.container.dto.request.CreateContainerRequest;
+import com.grim.contextos.container.dto.request.ProgressUpdateRequest;
 import com.grim.contextos.container.dto.request.UpdateContainerRequest;
 import com.grim.contextos.container.dto.response.ContainerListResponse;
 import com.grim.contextos.container.dto.response.ContainerResponse;
@@ -86,6 +87,14 @@ public class ContainerController {
     public ResponseEntity<ApiResponse<Void>> deleteContainer(@PathVariable UUID id) {
         containerService.deleteContainer(id);
         return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    @PatchMapping("/{id}/progress")
+    public ResponseEntity<ApiResponse<ContainerResponse>> updateProgress(
+            @PathVariable UUID id,
+            @Valid @RequestBody ProgressUpdateRequest request) {
+        ContainerResponse response = containerService.updateProgress(id, request.progress());
+        return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
     @PostMapping("/{id}/restore")

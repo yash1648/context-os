@@ -42,7 +42,7 @@ class ContainerSearchControllerTest {
         UUID.randomUUID(), "my-app", "desc", ContainerType.SOFTWARE_PROJECT,
         null, ContainerStatus.RUNNING, null, null, null, null,
         null, null, LocalDateTime.now(), LocalDateTime.now(),
-        false, null);
+        false, null, null);
 
     @Test
     void searchByTextReturns200() throws Exception {
@@ -120,7 +120,7 @@ class ContainerSearchControllerTest {
             UUID.randomUUID(), "other", null, ContainerType.MOVIE,
             null, ContainerStatus.PENDING, null, null, null, null,
             null, null, LocalDateTime.now(), LocalDateTime.now(),
-            false, null);
+            false, null, null);
 
         when(containerService.searchContainers(any())).thenReturn(List.of(containerResponse, c2));
 

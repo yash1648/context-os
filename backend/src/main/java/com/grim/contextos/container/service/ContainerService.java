@@ -150,6 +150,17 @@ public class ContainerService {
     }
 
     @Transactional
+    public ContainerResponse updateProgress(UUID id, int progress) {
+        Container container = containerRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Container", id));
+        container.setProgress(progress);
+        container = containerRepository.save(container);
+        eventPublisher.publish(new DomainEvent("CONTAINER", "PROGRESS_UPDATED", id,
+            "Progress updated to " + progress + "%", null));
+        return ContainerResponse.from(container);
+    }
+
+    @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public void hardDeleteContainer(UUID id) {
         Container container = containerRepository.findDeletedById(id)

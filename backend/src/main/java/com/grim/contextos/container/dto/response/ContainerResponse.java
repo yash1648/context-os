@@ -23,7 +23,8 @@ public record ContainerResponse(
     LocalDateTime createdAt,
     LocalDateTime updatedAt,
     boolean pinned,
-    LocalDateTime pinnedAt
+    LocalDateTime pinnedAt,
+    Integer progress
 ) {
     public static ContainerResponse from(Container c) {
         return new ContainerResponse(
@@ -32,7 +33,8 @@ public record ContainerResponse(
             c.getStatus(), c.getEnvVars(), c.getResourceLimits(), c.getLabels(),
             c.getErrorMessage(), c.getStartedAt(), c.getStoppedAt(),
             c.getCreatedAt(), c.getUpdatedAt(),
-            c.isPinned(), c.getPinnedAt()
+            c.isPinned(), c.getPinnedAt(),
+            c.getProgress()
         );
     }
 }
