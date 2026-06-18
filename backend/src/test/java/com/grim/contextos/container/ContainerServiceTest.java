@@ -9,6 +9,7 @@ import com.grim.contextos.container.model.ContainerStatus;
 import com.grim.contextos.container.model.ContainerType;
 import com.grim.contextos.container.repository.ContainerRepository;
 import com.grim.contextos.container.service.ContainerService;
+import com.grim.contextos.timeline.service.TimelineService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,13 +31,16 @@ class ContainerServiceTest {
     @Mock
     private ContainerRepository containerRepository;
 
+    @Mock
+    private TimelineService timelineService;
+
     private ContainerService containerService;
     private final UUID containerId = UUID.randomUUID();
     private Container testContainer;
 
     @BeforeEach
     void setUp() {
-        containerService = new ContainerService(containerRepository);
+        containerService = new ContainerService(containerRepository, timelineService);
 
         testContainer = new Container("test-container", "A test container", ContainerType.BOOK);
         testContainer.setId(containerId);
@@ -131,7 +135,7 @@ class ContainerServiceTest {
 
     @Test
     void deleteContainerDeletesWhenExists() {
-        when(containerRepository.existsById(containerId)).thenReturn(true);
+        when(containerRepository.findById(containerId)).thenReturn(Optional.of(testContainer));
 
         containerService.deleteContainer(containerId);
 
@@ -140,7 +144,7 @@ class ContainerServiceTest {
 
     @Test
     void deleteContainerThrowsWhenNotFound() {
-        when(containerRepository.existsById(containerId)).thenReturn(false);
+        when(containerRepository.findById(containerId)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> containerService.deleteContainer(containerId));
         verify(containerRepository, never()).deleteById(any());

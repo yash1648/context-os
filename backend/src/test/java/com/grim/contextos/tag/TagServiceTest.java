@@ -10,6 +10,7 @@ import com.grim.contextos.tag.dto.response.TagResponse;
 import com.grim.contextos.tag.model.Tag;
 import com.grim.contextos.tag.repository.TagRepository;
 import com.grim.contextos.tag.service.TagService;
+import com.grim.contextos.timeline.service.TimelineService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,6 +35,9 @@ class TagServiceTest {
     @Mock
     private ContainerRepository containerRepository;
 
+    @Mock
+    private TimelineService timelineService;
+
     private TagService tagService;
     private final UUID ownerId = UUID.randomUUID();
     private final UUID tagId = UUID.randomUUID();
@@ -41,7 +45,7 @@ class TagServiceTest {
 
     @BeforeEach
     void setUp() {
-        tagService = new TagService(tagRepository, containerRepository);
+        tagService = new TagService(tagRepository, containerRepository, timelineService);
         testTag = new Tag("fiction", "#ff0000", ownerId);
         testTag.setId(tagId);
     }

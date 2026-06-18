@@ -7,6 +7,8 @@ import com.grim.contextos.container.dto.response.ContainerResponse;
 import com.grim.contextos.container.model.Container;
 import com.grim.contextos.container.model.ContainerStatus;
 import com.grim.contextos.container.repository.ContainerRepository;
+import com.grim.contextos.timeline.model.TimelineEventType;
+import com.grim.contextos.timeline.service.TimelineService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,9 +19,11 @@ import java.util.UUID;
 public class ContainerService {
 
     private final ContainerRepository containerRepository;
+    private final TimelineService timelineService;
 
-    public ContainerService(ContainerRepository containerRepository) {
+    public ContainerService(ContainerRepository containerRepository, TimelineService timelineService) {
         this.containerRepository = containerRepository;
+        this.timelineService = timelineService;
     }
 
     @Transactional
@@ -30,6 +34,8 @@ public class ContainerService {
         container.setResourceLimits(request.resourceLimits());
         container.setLabels(request.labels());
         container = containerRepository.save(container);
+        timelineService.recordEvent(container.getId(), TimelineEventType.CREATED,
+            "Container '" + container.getName() + "' created");
         return ContainerResponse.from(container);
     }
 
@@ -54,10 +60,12 @@ public class ContainerService {
 
     @Transactional
     public void deleteContainer(UUID id) {
-        if (!containerRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Container", id);
-        }
+        Container container = containerRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Container", id));
+        String name = container.getName();
         containerRepository.deleteById(id);
+        timelineService.recordEvent(id, TimelineEventType.DELETED,
+            "Container '" + name + "' deleted");
     }
 
     @Transactional
@@ -65,7 +73,8 @@ public class ContainerService {
         Container container = containerRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Container", id));
 
-        validateTransition(container.getStatus(), newStatus);
+        ContainerStatus previous = container.getStatus();
+        validateTransition(previous, newStatus);
         container.setStatus(newStatus);
 
         if (newStatus == ContainerStatus.RUNNING) {
@@ -75,6 +84,7 @@ public class ContainerService {
         }
 
         container = containerRepository.save(container);
+        timelineService.recordStatusChange(id, previous, newStatus);
         return ContainerResponse.from(container);
     }
 

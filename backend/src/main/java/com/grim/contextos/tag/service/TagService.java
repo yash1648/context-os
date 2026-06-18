@@ -8,6 +8,8 @@ import com.grim.contextos.tag.dto.request.UpdateTagRequest;
 import com.grim.contextos.tag.dto.response.TagResponse;
 import com.grim.contextos.tag.model.Tag;
 import com.grim.contextos.tag.repository.TagRepository;
+import com.grim.contextos.timeline.model.TimelineEventType;
+import com.grim.contextos.timeline.service.TimelineService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,10 +23,13 @@ public class TagService {
 
     private final TagRepository tagRepository;
     private final ContainerRepository containerRepository;
+    private final TimelineService timelineService;
 
-    public TagService(TagRepository tagRepository, ContainerRepository containerRepository) {
+    public TagService(TagRepository tagRepository, ContainerRepository containerRepository,
+                      TimelineService timelineService) {
         this.tagRepository = tagRepository;
         this.containerRepository = containerRepository;
+        this.timelineService = timelineService;
     }
 
     @Transactional
@@ -81,6 +86,9 @@ public class TagService {
             .collect(Collectors.toSet());
         container.getTags().addAll(tags);
         containerRepository.save(container);
+        String tagNames = tags.stream().map(Tag::getName).collect(Collectors.joining(", "));
+        timelineService.recordEvent(containerId, TimelineEventType.TAG_ASSIGNED,
+            "Tags assigned: " + tagNames);
     }
 
     @Transactional
@@ -89,7 +97,10 @@ public class TagService {
             .orElseThrow(() -> new ResourceNotFoundException("Container", containerId));
         Tag tag = tagRepository.findById(tagId)
             .orElseThrow(() -> new ResourceNotFoundException("Tag", tagId));
+        String tagName = tag.getName();
         container.getTags().remove(tag);
         containerRepository.save(container);
+        timelineService.recordEvent(containerId, TimelineEventType.TAG_REMOVED,
+            "Tag removed: " + tagName);
     }
 }
