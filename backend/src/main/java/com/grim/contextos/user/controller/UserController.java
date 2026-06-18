@@ -7,9 +7,11 @@ import com.grim.contextos.user.model.User;
 import com.grim.contextos.user.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -33,6 +35,11 @@ public class UserController {
             "role", user.getRole().name()
         );
         return ResponseEntity.ok(ApiResponse.ok(profile));
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> listUsers() {
+        return ResponseEntity.ok(ApiResponse.ok(userService.listAllUsers()));
     }
 
     @PutMapping("/me")

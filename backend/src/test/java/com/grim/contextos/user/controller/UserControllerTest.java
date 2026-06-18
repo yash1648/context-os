@@ -22,6 +22,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import org.springframework.security.test.context.support.WithMockUser;
+
 @SpringBootTest(properties = {
     "spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1",
     "spring.datasource.driver-class-name=org.h2.Driver",
@@ -137,6 +139,37 @@ class UserControllerTest {
         mockMvc.perform(put("/api/v1/users/me")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"displayName\":\"test\"}"))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void listUsersAsAdminReturnsOk() throws Exception {
+        // Create an admin user
+        User adminUser = new User("admin@test.com", passwordEncoder.encode("Admin123!"), "Admin User");
+        adminUser.setRole(Role.ADMIN);
+        adminUser = userRepository.save(adminUser);
+        UserPrincipal adminPrincipal = new UserPrincipal(adminUser.getId(), adminUser.getEmail(), adminUser.getPasswordHash(), Role.ADMIN);
+
+        mockMvc.perform(get("/api/v1/users")
+                .with(user(adminPrincipal))
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data").isArray());
+    }
+
+    @Test
+    void listUsersAsUserReturnsForbidden() throws Exception {
+        mockMvc.perform(get("/api/v1/users")
+                .with(user(principal))
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void listUsersRequiresAuthentication() throws Exception {
+        mockMvc.perform(get("/api/v1/users")
+                .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isForbidden());
     }
 }
