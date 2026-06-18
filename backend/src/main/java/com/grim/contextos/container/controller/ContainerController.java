@@ -4,13 +4,16 @@ import com.grim.contextos.common.response.ApiResponse;
 import com.grim.contextos.container.dto.request.CreateContainerRequest;
 import com.grim.contextos.container.dto.response.ContainerListResponse;
 import com.grim.contextos.container.dto.response.ContainerResponse;
+import com.grim.contextos.container.dto.search.ContainerSearchCriteria;
 import com.grim.contextos.container.model.ContainerStatus;
+import com.grim.contextos.container.model.ContainerType;
 import com.grim.contextos.container.service.ContainerService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -33,6 +36,17 @@ public class ContainerController {
     public ResponseEntity<ApiResponse<ContainerListResponse>> listContainers() {
         ContainerListResponse response = containerService.listContainers();
         return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<List<ContainerResponse>>> searchContainers(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) ContainerStatus status,
+            @RequestParam(required = false) ContainerType type,
+            @RequestParam(required = false) UUID tagId) {
+        var criteria = new ContainerSearchCriteria(q, status, type, tagId);
+        List<ContainerResponse> results = containerService.searchContainers(criteria);
+        return ResponseEntity.ok(ApiResponse.ok(results));
     }
 
     @GetMapping("/{id}")

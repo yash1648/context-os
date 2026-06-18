@@ -4,14 +4,18 @@ import com.grim.contextos.common.exception.ResourceNotFoundException;
 import com.grim.contextos.container.dto.request.CreateContainerRequest;
 import com.grim.contextos.container.dto.response.ContainerListResponse;
 import com.grim.contextos.container.dto.response.ContainerResponse;
+import com.grim.contextos.container.dto.search.ContainerSearchCriteria;
 import com.grim.contextos.container.model.Container;
 import com.grim.contextos.container.model.ContainerStatus;
 import com.grim.contextos.container.repository.ContainerRepository;
 import com.grim.contextos.timeline.model.TimelineEventType;
 import com.grim.contextos.timeline.service.TimelineService;
+import jakarta.persistence.criteria.Predicate;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -86,6 +90,37 @@ public class ContainerService {
         container = containerRepository.save(container);
         timelineService.recordStatusChange(id, previous, newStatus);
         return ContainerResponse.from(container);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ContainerResponse> searchContainers(ContainerSearchCriteria criteria) {
+        Specification<Container> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (criteria.q() != null && !criteria.q().isBlank()) {
+                String pattern = "%" + criteria.q().toLowerCase() + "%";
+                predicates.add(cb.or(
+                    cb.like(cb.lower(root.get("name")), pattern),
+                    cb.like(cb.lower(root.get("description")), pattern),
+                    cb.like(cb.lower(root.get("labels")), pattern)
+                ));
+            }
+            if (criteria.status() != null) {
+                predicates.add(cb.equal(root.get("status"), criteria.status()));
+            }
+            if (criteria.type() != null) {
+                predicates.add(cb.equal(root.get("type"), criteria.type()));
+            }
+            if (criteria.tagId() != null) {
+                predicates.add(cb.equal(root.join("tags").get("id"), criteria.tagId()));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        return containerRepository.findAll(spec).stream()
+            .map(ContainerResponse::from)
+            .toList();
     }
 
     private void validateTransition(ContainerStatus current, ContainerStatus next) {
