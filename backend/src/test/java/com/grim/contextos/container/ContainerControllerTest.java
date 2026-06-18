@@ -7,6 +7,7 @@ import com.grim.contextos.container.dto.request.CreateContainerRequest;
 import com.grim.contextos.container.dto.response.ContainerListResponse;
 import com.grim.contextos.container.dto.response.ContainerResponse;
 import com.grim.contextos.container.model.ContainerStatus;
+import com.grim.contextos.container.model.ContainerType;
 import com.grim.contextos.container.service.ContainerService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,7 +42,7 @@ class ContainerControllerTest {
 
     private final UUID containerId = UUID.randomUUID();
     private final ContainerResponse response = new ContainerResponse(
-        containerId, "test-ctr", "desc", "worker", ContainerStatus.PENDING,
+        containerId, "test-ctr", "desc", ContainerType.BOOK, null, ContainerStatus.PENDING,
         null, null, null, null,
         null, null, LocalDateTime.now(), LocalDateTime.now()
     );
@@ -53,7 +54,7 @@ class ContainerControllerTest {
         mockMvc.perform(post("/api/v1/containers")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                    {"name":"test-ctr","description":"desc","type":"worker"}
+                    {"name":"test-ctr","description":"desc","type":"BOOK"}
                     """))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.success").value(true))
@@ -78,6 +79,16 @@ class ContainerControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {"name":"test-ctr","description":"desc"}
+                    """))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void createContainerReturns400WhenTypeInvalid() throws Exception {
+        mockMvc.perform(post("/api/v1/containers")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"name":"test-ctr","description":"desc","type":"INVALID"}
                     """))
             .andExpect(status().isBadRequest());
     }
@@ -117,7 +128,7 @@ class ContainerControllerTest {
     @Test
     void updateStatusReturns200() throws Exception {
         var runningResponse = new ContainerResponse(
-            containerId, "test-ctr", "desc", "worker", ContainerStatus.RUNNING,
+            containerId, "test-ctr", "desc", ContainerType.BOOK, null, ContainerStatus.RUNNING,
             null, null, null, null,
             LocalDateTime.now(), null, LocalDateTime.now(), LocalDateTime.now()
         );

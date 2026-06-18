@@ -32,6 +32,17 @@ jwt:
   access-token-expiration: 900000
   refresh-token-expiration: 2592000000
 
+springdoc:
+  packages-to-scan: com.grim.contextos
+  writer-with-default-pretty-printer: true
+  cache:
+    disabled: true
+  swagger-ui:
+    disable-swagger-default-url: true
+    operations-sorter: alpha
+    tags-sorter: alpha
+    document-title: ContextOS API
+
 logging:
   level:
     com.grim.contextos: DEBUG

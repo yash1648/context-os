@@ -6,6 +6,7 @@ import com.grim.contextos.container.dto.response.ContainerListResponse;
 import com.grim.contextos.container.dto.response.ContainerResponse;
 import com.grim.contextos.container.model.Container;
 import com.grim.contextos.container.model.ContainerStatus;
+import com.grim.contextos.container.model.ContainerType;
 import com.grim.contextos.container.repository.ContainerRepository;
 import com.grim.contextos.container.service.ContainerService;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,14 +38,14 @@ class ContainerServiceTest {
     void setUp() {
         containerService = new ContainerService(containerRepository);
 
-        testContainer = new Container("test-container", "A test container", "worker");
+        testContainer = new Container("test-container", "A test container", ContainerType.BOOK);
         testContainer.setId(containerId);
         testContainer.setStatus(ContainerStatus.PENDING);
     }
 
     @Test
     void createContainerReturnsResponse() {
-        var request = new CreateContainerRequest("my-container", "desc", "worker", null, null, null);
+        var request = new CreateContainerRequest("my-container", "desc", ContainerType.BOOK, null, null, null, null);
 
         when(containerRepository.save(any(Container.class))).thenReturn(testContainer);
 
@@ -52,14 +53,14 @@ class ContainerServiceTest {
 
         assertEquals(containerId, response.id());
         assertEquals("test-container", response.name());
-        assertEquals("worker", response.type());
+        assertEquals(ContainerType.BOOK, response.type());
         assertEquals(ContainerStatus.PENDING, response.status());
     }
 
     @Test
     void createContainerWithAllFields() {
-        var request = new CreateContainerRequest("full-container", "full desc", "gpu-worker",
-            "{\"KEY\":\"val\"}", "{\"cpu\":\"2\"}", "{\"env\":\"prod\"}");
+        var request = new CreateContainerRequest("full-container", "full desc", ContainerType.COURSE,
+            null, "{\"KEY\":\"val\"}", "{\"cpu\":\"2\"}", "{\"env\":\"prod\"}");
 
         when(containerRepository.save(any(Container.class))).thenReturn(testContainer);
 
@@ -88,7 +89,7 @@ class ContainerServiceTest {
 
     @Test
     void listContainersReturnsSummaries() {
-        Container c2 = new Container("container-2", "desc", "worker");
+        Container c2 = new Container("container-2", "desc", ContainerType.MOVIE);
         c2.setId(UUID.randomUUID());
         c2.setStatus(ContainerStatus.RUNNING);
         c2.setStartedAt(LocalDateTime.now());
@@ -109,10 +110,10 @@ class ContainerServiceTest {
 
     @Test
     void listContainersWithMixedStatuses() {
-        Container running = new Container("running", "running", "worker");
+        Container running = new Container("running", "running", ContainerType.MOVIE);
         running.setId(UUID.randomUUID());
         running.setStatus(ContainerStatus.RUNNING);
-        Container stopped = new Container("stopped", "stopped", "worker");
+        Container stopped = new Container("stopped", "stopped", ContainerType.MOVIE);
         stopped.setId(UUID.randomUUID());
         stopped.setStatus(ContainerStatus.STOPPED);
 

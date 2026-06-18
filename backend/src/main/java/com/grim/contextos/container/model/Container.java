@@ -5,6 +5,9 @@ import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 @Entity
 @Table(name = "containers")
 public class Container extends BaseEntity {
@@ -15,12 +18,17 @@ public class Container extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(nullable = false, length = 100)
-    private String type;
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private ContainerType type;
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private ContainerStatus status = ContainerStatus.PENDING;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column
+    private String metadata;
 
     @Column(columnDefinition = "TEXT")
     private String envVars;
@@ -39,7 +47,7 @@ public class Container extends BaseEntity {
 
     public Container() {}
 
-    public Container(String name, String description, String type) {
+    public Container(String name, String description, ContainerType type) {
         this.name = name;
         this.description = description;
         this.type = type;
@@ -52,11 +60,14 @@ public class Container extends BaseEntity {
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
 
-    public String getType() { return type; }
-    public void setType(String type) { this.type = type; }
+    public ContainerType getType() { return type; }
+    public void setType(ContainerType type) { this.type = type; }
 
     public ContainerStatus getStatus() { return status; }
     public void setStatus(ContainerStatus status) { this.status = status; }
+
+    public String getMetadata() { return metadata; }
+    public void setMetadata(String metadata) { this.metadata = metadata; }
 
     public String getEnvVars() { return envVars; }
     public void setEnvVars(String envVars) { this.envVars = envVars; }

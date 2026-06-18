@@ -25,6 +25,7 @@ public class ContainerService {
     @Transactional
     public ContainerResponse createContainer(CreateContainerRequest request) {
         Container container = new Container(request.name(), request.description(), request.type());
+        container.setMetadata(request.metadata());
         container.setEnvVars(request.envVars());
         container.setResourceLimits(request.resourceLimits());
         container.setLabels(request.labels());
