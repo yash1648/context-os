@@ -21,7 +21,9 @@ public record ContainerResponse(
     LocalDateTime startedAt,
     LocalDateTime stoppedAt,
     LocalDateTime createdAt,
-    LocalDateTime updatedAt
+    LocalDateTime updatedAt,
+    boolean pinned,
+    LocalDateTime pinnedAt
 ) {
     public static ContainerResponse from(Container c) {
         return new ContainerResponse(
@@ -29,7 +31,8 @@ public record ContainerResponse(
             c.getMetadata(),
             c.getStatus(), c.getEnvVars(), c.getResourceLimits(), c.getLabels(),
             c.getErrorMessage(), c.getStartedAt(), c.getStoppedAt(),
-            c.getCreatedAt(), c.getUpdatedAt()
+            c.getCreatedAt(), c.getUpdatedAt(),
+            c.isPinned(), c.getPinnedAt()
         );
     }
 }

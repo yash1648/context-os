@@ -9,6 +9,7 @@ import com.grim.contextos.container.model.ContainerStatus;
 import com.grim.contextos.container.model.ContainerType;
 import com.grim.contextos.container.repository.ContainerRepository;
 import com.grim.contextos.container.service.ContainerService;
+import com.grim.contextos.timeline.model.TimelineEventType;
 import com.grim.contextos.timeline.service.TimelineService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,6 +24,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -200,5 +202,46 @@ class ContainerServiceTest {
 
         assertThrows(ResourceNotFoundException.class,
             () -> containerService.transitionStatus(containerId, ContainerStatus.RUNNING));
+    }
+
+    @Test
+    void pinContainerSetsPinned() {
+        when(containerRepository.findById(containerId)).thenReturn(Optional.of(testContainer));
+        when(containerRepository.save(any(Container.class))).thenReturn(testContainer);
+
+        ContainerResponse response = containerService.pinContainer(containerId);
+
+        assertTrue(response.pinned());
+        assertNotNull(response.pinnedAt());
+        verify(timelineService).recordEvent(eq(containerId), eq(TimelineEventType.PINNED), any());
+    }
+
+    @Test
+    void unpinContainerClearsPinned() {
+        testContainer.setPinned(true);
+        testContainer.setPinnedAt(LocalDateTime.now());
+        when(containerRepository.findById(containerId)).thenReturn(Optional.of(testContainer));
+        when(containerRepository.save(any(Container.class))).thenReturn(testContainer);
+
+        ContainerResponse response = containerService.unpinContainer(containerId);
+
+        assertFalse(response.pinned());
+        assertNull(response.pinnedAt());
+        verify(timelineService).recordEvent(eq(containerId), eq(TimelineEventType.UNPINNED), any());
+    }
+
+    @Test
+    void listPinnedContainersReturnsOnlyPinned() {
+        Container pinned1 = new Container("pinned1", "desc", ContainerType.BOOK);
+        pinned1.setId(UUID.randomUUID());
+        pinned1.setPinned(true);
+        pinned1.setPinnedAt(LocalDateTime.now());
+
+        when(containerRepository.findByPinnedTrueOrderByPinnedAtDesc()).thenReturn(List.of(pinned1));
+
+        List<ContainerResponse> results = containerService.listPinnedContainers();
+
+        assertEquals(1, results.size());
+        assertTrue(results.getFirst().pinned());
     }
 }

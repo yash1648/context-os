@@ -123,6 +123,37 @@ public class ContainerService {
             .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<ContainerResponse> listPinnedContainers() {
+        return containerRepository.findByPinnedTrueOrderByPinnedAtDesc().stream()
+            .map(ContainerResponse::from)
+            .toList();
+    }
+
+    @Transactional
+    public ContainerResponse pinContainer(UUID id) {
+        Container container = containerRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Container", id));
+        container.setPinned(true);
+        container.setPinnedAt(java.time.LocalDateTime.now());
+        container = containerRepository.save(container);
+        timelineService.recordEvent(id, TimelineEventType.PINNED,
+            "Container '" + container.getName() + "' pinned");
+        return ContainerResponse.from(container);
+    }
+
+    @Transactional
+    public ContainerResponse unpinContainer(UUID id) {
+        Container container = containerRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Container", id));
+        container.setPinned(false);
+        container.setPinnedAt(null);
+        container = containerRepository.save(container);
+        timelineService.recordEvent(id, TimelineEventType.UNPINNED,
+            "Container '" + container.getName() + "' unpinned");
+        return ContainerResponse.from(container);
+    }
+
     private void validateTransition(ContainerStatus current, ContainerStatus next) {
         if (current == ContainerStatus.DESTROYED) {
             throw new IllegalStateException("Cannot transition a destroyed container");

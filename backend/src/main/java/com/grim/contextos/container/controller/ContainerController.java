@@ -49,6 +49,24 @@ public class ContainerController {
         return ResponseEntity.ok(ApiResponse.ok(results));
     }
 
+    @GetMapping("/pinned")
+    public ResponseEntity<ApiResponse<List<ContainerResponse>>> listPinned() {
+        List<ContainerResponse> pinned = containerService.listPinnedContainers();
+        return ResponseEntity.ok(ApiResponse.ok(pinned));
+    }
+
+    @PostMapping("/{id}/pin")
+    public ResponseEntity<ApiResponse<ContainerResponse>> pinContainer(@PathVariable UUID id) {
+        ContainerResponse response = containerService.pinContainer(id);
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @DeleteMapping("/{id}/pin")
+    public ResponseEntity<ApiResponse<ContainerResponse>> unpinContainer(@PathVariable UUID id) {
+        ContainerResponse response = containerService.unpinContainer(id);
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<ContainerResponse>> getContainer(@PathVariable UUID id) {
         ContainerResponse response = containerService.getContainer(id);

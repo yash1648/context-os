@@ -56,6 +56,11 @@ public class Container extends BaseEntity {
     private LocalDateTime startedAt;
     private LocalDateTime stoppedAt;
 
+    @Column(nullable = false)
+    private boolean pinned = false;
+
+    private LocalDateTime pinnedAt;
+
     public Container() {}
 
     public Container(String name, String description, ContainerType type) {
@@ -100,4 +105,10 @@ public class Container extends BaseEntity {
 
     public LocalDateTime getStoppedAt() { return stoppedAt; }
     public void setStoppedAt(LocalDateTime stoppedAt) { this.stoppedAt = stoppedAt; }
+
+    public boolean isPinned() { return pinned; }
+    public void setPinned(boolean pinned) { this.pinned = pinned; }
+
+    public LocalDateTime getPinnedAt() { return pinnedAt; }
+    public void setPinnedAt(LocalDateTime pinnedAt) { this.pinnedAt = pinnedAt; }
 }

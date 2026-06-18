@@ -44,7 +44,8 @@ class ContainerControllerTest {
     private final ContainerResponse response = new ContainerResponse(
         containerId, "test-ctr", "desc", ContainerType.BOOK, null, ContainerStatus.PENDING,
         null, null, null, null,
-        null, null, LocalDateTime.now(), LocalDateTime.now()
+        null, null, LocalDateTime.now(), LocalDateTime.now(),
+        false, null
     );
 
     @Test
@@ -130,7 +131,8 @@ class ContainerControllerTest {
         var runningResponse = new ContainerResponse(
             containerId, "test-ctr", "desc", ContainerType.BOOK, null, ContainerStatus.RUNNING,
             null, null, null, null,
-            LocalDateTime.now(), null, LocalDateTime.now(), LocalDateTime.now()
+            LocalDateTime.now(), null, LocalDateTime.now(), LocalDateTime.now(),
+            false, null
         );
         when(containerService.transitionStatus(containerId, ContainerStatus.RUNNING)).thenReturn(runningResponse);
 
@@ -142,5 +144,41 @@ class ContainerControllerTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data.status").value("RUNNING"));
+    }
+
+    @Test
+    void listPinnedReturns200() throws Exception {
+        when(containerService.listPinnedContainers()).thenReturn(List.of(response));
+
+        mockMvc.perform(get("/api/v1/containers/pinned")
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data[0].pinned").value(false));
+    }
+
+    @Test
+    void pinContainerReturns200() throws Exception {
+        var pinnedResponse = new ContainerResponse(
+            containerId, "test-ctr", "desc", ContainerType.BOOK, null, ContainerStatus.PENDING,
+            null, null, null, null,
+            null, null, LocalDateTime.now(), LocalDateTime.now(),
+            true, LocalDateTime.now());
+        when(containerService.pinContainer(containerId)).thenReturn(pinnedResponse);
+
+        mockMvc.perform(post("/api/v1/containers/{id}/pin", containerId)
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.pinned").value(true));
+    }
+
+    @Test
+    void unpinContainerReturns200() throws Exception {
+        when(containerService.unpinContainer(containerId)).thenReturn(response);
+
+        mockMvc.perform(delete("/api/v1/containers/{id}/pin", containerId)
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.pinned").value(false));
     }
 }

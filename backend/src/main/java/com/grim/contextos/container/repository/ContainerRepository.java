@@ -15,4 +15,6 @@ public interface ContainerRepository extends JpaRepository<Container, UUID>, Jpa
     List<Container> findByNameContainingIgnoreCase(String name);
 
     long countByStatus(ContainerStatus status);
+
+    List<Container> findByPinnedTrueOrderByPinnedAtDesc();
 }

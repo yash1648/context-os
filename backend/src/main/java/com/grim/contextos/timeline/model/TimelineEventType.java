@@ -6,5 +6,7 @@ public enum TimelineEventType {
     UPDATED,
     DELETED,
     TAG_ASSIGNED,
-    TAG_REMOVED
+    TAG_REMOVED,
+    PINNED,
+    UNPINNED
 }
