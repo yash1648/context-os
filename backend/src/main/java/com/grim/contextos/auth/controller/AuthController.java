@@ -1,9 +1,12 @@
 package com.grim.contextos.auth.controller;
 
+import com.grim.contextos.auth.dto.request.ForgotPasswordRequest;
 import com.grim.contextos.auth.dto.request.LoginRequest;
 import com.grim.contextos.auth.dto.request.RefreshTokenRequest;
 import com.grim.contextos.auth.dto.request.RegisterRequest;
+import com.grim.contextos.auth.dto.request.ResetPasswordRequest;
 import com.grim.contextos.auth.dto.response.AuthResponse;
+import com.grim.contextos.auth.dto.response.ForgotPasswordResponse;
 import com.grim.contextos.auth.dto.response.TokenRefreshResponse;
 import com.grim.contextos.auth.service.AuthService;
 import com.grim.contextos.common.response.ApiResponse;
@@ -43,6 +46,20 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(@Valid @RequestBody RefreshTokenRequest request) {
         authService.logout(request.refreshToken());
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<ForgotPasswordResponse>> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request) {
+        String token = authService.forgotPassword(request.email());
+        return ResponseEntity.ok(ApiResponse.ok(ForgotPasswordResponse.of(token)));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request);
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
 }

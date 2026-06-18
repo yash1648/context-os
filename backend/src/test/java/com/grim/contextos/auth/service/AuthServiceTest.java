@@ -2,11 +2,14 @@ package com.grim.contextos.auth.service;
 
 import com.grim.contextos.auth.dto.request.LoginRequest;
 import com.grim.contextos.auth.dto.request.RegisterRequest;
+import com.grim.contextos.auth.dto.request.ResetPasswordRequest;
 import com.grim.contextos.auth.dto.response.AuthResponse;
 import com.grim.contextos.auth.dto.response.TokenRefreshResponse;
+import com.grim.contextos.auth.model.PasswordResetToken;
 import com.grim.contextos.auth.model.RefreshToken;
 import com.grim.contextos.auth.model.Role;
 import com.grim.contextos.auth.model.UserPrincipal;
+import com.grim.contextos.auth.repository.PasswordResetTokenRepository;
 import com.grim.contextos.auth.security.JwtTokenProvider;
 import com.grim.contextos.user.model.User;
 import com.grim.contextos.user.repository.UserRepository;
@@ -38,6 +41,9 @@ class AuthServiceTest {
     @Mock
     private RefreshTokenService refreshTokenService;
 
+    @Mock
+    private PasswordResetTokenRepository passwordResetTokenRepository;
+
     private AuthService authService;
     private final UUID userId = UUID.randomUUID();
     private User testUser;
@@ -45,7 +51,7 @@ class AuthServiceTest {
 
     @BeforeEach
     void setUp() {
-        authService = new AuthService(userRepository, passwordEncoder, jwtTokenProvider, refreshTokenService);
+        authService = new AuthService(userRepository, passwordEncoder, jwtTokenProvider, refreshTokenService, passwordResetTokenRepository);
 
         testUser = new User("test@test.com", "encodedPassword", "Test User");
         testUser.setId(userId);
@@ -173,5 +179,76 @@ class AuthServiceTest {
         authService.logout("refresh-token");
 
         verify(refreshTokenService).revokeRefreshToken("refresh-token");
+    }
+
+    @Test
+    void forgotPasswordGeneratesToken() {
+        when(userRepository.findByEmail("test@test.com")).thenReturn(Optional.of(testUser));
+
+        String token = authService.forgotPassword("test@test.com");
+
+        assertNotNull(token);
+        verify(passwordResetTokenRepository).deleteByEmail("test@test.com");
+        verify(passwordResetTokenRepository).save(any(PasswordResetToken.class));
+    }
+
+    @Test
+    void forgotPasswordThrowsWhenEmailNotFound() {
+        when(userRepository.findByEmail("nonexistent@test.com")).thenReturn(Optional.empty());
+
+        assertThrows(RuntimeException.class,
+            () -> authService.forgotPassword("nonexistent@test.com"));
+        verify(passwordResetTokenRepository, never()).save(any());
+    }
+
+    @Test
+    void resetPasswordWithValidTokenUpdatesPassword() {
+        String token = UUID.randomUUID().toString();
+        PasswordResetToken resetToken = new PasswordResetToken(token, "test@test.com",
+            LocalDateTime.now().plusHours(1));
+
+        when(passwordResetTokenRepository.findByToken(token)).thenReturn(Optional.of(resetToken));
+        when(userRepository.findByEmail("test@test.com")).thenReturn(Optional.of(testUser));
+        when(passwordEncoder.encode("NewPassword123!")).thenReturn("newEncodedPassword");
+
+        authService.resetPassword(new ResetPasswordRequest(token, "NewPassword123!"));
+
+        assertEquals("newEncodedPassword", testUser.getPasswordHash());
+        assertTrue(resetToken.isUsed());
+        verify(userRepository).save(testUser);
+        verify(passwordResetTokenRepository).save(resetToken);
+    }
+
+    @Test
+    void resetPasswordWithInvalidTokenThrows() {
+        when(passwordResetTokenRepository.findByToken("bad-token")).thenReturn(Optional.empty());
+
+        assertThrows(RuntimeException.class,
+            () -> authService.resetPassword(new ResetPasswordRequest("bad-token", "NewPassword123!")));
+    }
+
+    @Test
+    void resetPasswordWithUsedTokenThrows() {
+        String token = UUID.randomUUID().toString();
+        PasswordResetToken resetToken = new PasswordResetToken(token, "test@test.com",
+            LocalDateTime.now().plusHours(1));
+        resetToken.setUsed(true);
+
+        when(passwordResetTokenRepository.findByToken(token)).thenReturn(Optional.of(resetToken));
+
+        assertThrows(RuntimeException.class,
+            () -> authService.resetPassword(new ResetPasswordRequest(token, "NewPassword123!")));
+    }
+
+    @Test
+    void resetPasswordWithExpiredTokenThrows() {
+        String token = UUID.randomUUID().toString();
+        PasswordResetToken resetToken = new PasswordResetToken(token, "test@test.com",
+            LocalDateTime.now().minusHours(1));
+
+        when(passwordResetTokenRepository.findByToken(token)).thenReturn(Optional.of(resetToken));
+
+        assertThrows(RuntimeException.class,
+            () -> authService.resetPassword(new ResetPasswordRequest(token, "NewPassword123!")));
     }
 }

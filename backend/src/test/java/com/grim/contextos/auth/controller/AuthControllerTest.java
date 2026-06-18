@@ -137,4 +137,57 @@ class AuthControllerTest {
                     """))
             .andExpect(status().isBadRequest());
     }
+
+    @Test
+    void forgotPasswordReturns200() throws Exception {
+        when(authService.forgotPassword("test@test.com")).thenReturn("reset-token-abc");
+
+        mockMvc.perform(post("/api/v1/auth/forgot-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"email":"test@test.com"}
+                    """))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.token").value("reset-token-abc"));
+    }
+
+    @Test
+    void forgotPasswordReturns400WhenEmailMissing() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/forgot-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void resetPasswordReturns200() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/reset-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"token":"valid-token","newPassword":"NewSecurePass123!"}
+                    """))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    void resetPasswordReturns400WhenTokenMissing() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/reset-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"newPassword":"NewSecurePass123!"}
+                    """))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void resetPasswordReturns400WhenPasswordTooShort() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/reset-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"token":"valid-token","newPassword":"short"}
+                    """))
+            .andExpect(status().isBadRequest());
+    }
 }
