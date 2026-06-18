@@ -91,6 +91,20 @@ public class TagService {
             "Tags assigned: " + tagNames);
     }
 
+    @Transactional(readOnly = true)
+    public List<TagResponse> searchTags(String query, UUID ownerId) {
+        return tagRepository.findByNameContainingIgnoreCaseAndOwnerId(query, ownerId).stream()
+            .map(TagResponse::from)
+            .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<TagResponse> autocompleteTags(String query, UUID ownerId) {
+        return tagRepository.findTop10ByNameContainingIgnoreCaseAndOwnerIdOrderByName(query, ownerId).stream()
+            .map(TagResponse::from)
+            .toList();
+    }
+
     @Transactional
     public void removeTagFromContainer(UUID containerId, UUID tagId) {
         Container container = containerRepository.findById(containerId)

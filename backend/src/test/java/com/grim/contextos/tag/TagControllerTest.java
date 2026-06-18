@@ -144,4 +144,28 @@ class TagControllerTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.success").value(true));
     }
+
+    @Test
+    void searchTagsReturns200() throws Exception {
+        when(tagService.searchTags(eq("fict"), any())).thenReturn(List.of(tagResponse));
+
+        mockMvc.perform(get("/api/v1/tags/search")
+                .with(user(principal))
+                .param("q", "fict")
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data[0].name").value("fiction"));
+    }
+
+    @Test
+    void autocompleteTagsReturns200() throws Exception {
+        when(tagService.autocompleteTags(eq("fic"), any())).thenReturn(List.of(tagResponse));
+
+        mockMvc.perform(get("/api/v1/tags/autocomplete")
+                .with(user(principal))
+                .param("q", "fic")
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data[0].name").value("fiction"));
+    }
 }

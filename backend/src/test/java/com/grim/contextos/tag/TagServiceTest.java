@@ -191,4 +191,36 @@ class TagServiceTest {
         assertThrows(ResourceNotFoundException.class,
             () -> tagService.removeTagFromContainer(containerId, tagId));
     }
+
+    @Test
+    void searchTagsReturnsMatchingTags() {
+        when(tagRepository.findByNameContainingIgnoreCaseAndOwnerId("fict", ownerId))
+            .thenReturn(List.of(testTag));
+
+        var results = tagService.searchTags("fict", ownerId);
+
+        assertEquals(1, results.size());
+        assertEquals("fiction", results.getFirst().name());
+    }
+
+    @Test
+    void searchTagsReturnsEmptyWhenNoMatch() {
+        when(tagRepository.findByNameContainingIgnoreCaseAndOwnerId("nonexistent", ownerId))
+            .thenReturn(List.of());
+
+        var results = tagService.searchTags("nonexistent", ownerId);
+
+        assertTrue(results.isEmpty());
+    }
+
+    @Test
+    void autocompleteTagsReturnsLimitedResults() {
+        when(tagRepository.findTop10ByNameContainingIgnoreCaseAndOwnerIdOrderByName("fict", ownerId))
+            .thenReturn(List.of(testTag));
+
+        var results = tagService.autocompleteTags("fict", ownerId);
+
+        assertEquals(1, results.size());
+        assertEquals("fiction", results.getFirst().name());
+    }
 }

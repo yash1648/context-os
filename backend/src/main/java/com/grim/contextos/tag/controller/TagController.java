@@ -41,6 +41,22 @@ public class TagController {
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<List<TagResponse>>> searchTags(
+            @RequestParam String q,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        List<TagResponse> results = tagService.searchTags(q, principal.id());
+        return ResponseEntity.ok(ApiResponse.ok(results));
+    }
+
+    @GetMapping("/autocomplete")
+    public ResponseEntity<ApiResponse<List<TagResponse>>> autocompleteTags(
+            @RequestParam String q,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        List<TagResponse> results = tagService.autocompleteTags(q, principal.id());
+        return ResponseEntity.ok(ApiResponse.ok(results));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<TagResponse>> getTag(@PathVariable UUID id) {
         TagResponse response = tagService.getTag(id);

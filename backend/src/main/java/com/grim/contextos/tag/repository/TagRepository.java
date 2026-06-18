@@ -14,4 +14,8 @@ public interface TagRepository extends JpaRepository<Tag, UUID> {
     Optional<Tag> findByNameAndOwnerId(String name, UUID ownerId);
 
     boolean existsByNameAndOwnerId(String name, UUID ownerId);
+
+    List<Tag> findByNameContainingIgnoreCaseAndOwnerId(String name, UUID ownerId);
+
+    List<Tag> findTop10ByNameContainingIgnoreCaseAndOwnerIdOrderByName(String name, UUID ownerId);
 }
