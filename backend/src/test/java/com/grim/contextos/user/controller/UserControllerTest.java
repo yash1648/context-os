@@ -92,7 +92,7 @@ class UserControllerTest {
     void getMeRequiresAuthentication() throws Exception {
         mockMvc.perform(get("/api/v1/users/me")
                 .contentType(MediaType.APPLICATION_JSON))
-            .andExpect(status().isForbidden());
+            .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -139,7 +139,7 @@ class UserControllerTest {
         mockMvc.perform(put("/api/v1/users/me")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"displayName\":\"test\"}"))
-            .andExpect(status().isForbidden());
+            .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -170,6 +170,6 @@ class UserControllerTest {
     void listUsersRequiresAuthentication() throws Exception {
         mockMvc.perform(get("/api/v1/users")
                 .contentType(MediaType.APPLICATION_JSON))
-            .andExpect(status().isForbidden());
+            .andExpect(status().isUnauthorized());
     }
 }
